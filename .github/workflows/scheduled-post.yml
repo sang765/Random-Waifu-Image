@@ -2,7 +2,7 @@ name: Scheduled Waifu Post
 
 on:
   workflow_dispatch:
-    # Allow manual triggering
+    # https://console.cron-job.org/ for schedule
 
 jobs:
   post-waifu:
