@@ -30,14 +30,13 @@ jobs:
         env:
           SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
           NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
-          DEFAULT_TAGS: ${{ vars.DEFAULT_TAGS }}
           POST_SFW: ${{ vars.POST_SFW }}
           POST_NSFW: ${{ vars.POST_NSFW }}
         run: |
           if [ "${{ vars.POST_SFW }}" = "true" ]; then
-            npm start -- --sfw
+            npm start -- --random-tags
           fi
           if [ "${{ vars.POST_NSFW }}" = "true" ]; then
-            npm start -- --nsfw
+            npm start -- --random-tags --nsfw
           fi
         shell: bash
