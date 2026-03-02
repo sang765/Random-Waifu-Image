@@ -1,0 +1,57 @@
+name: Scheduled Waifu Post
+
+on:
+  schedule:
+    # Run every 6 hours (adjust as needed)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  post-waifu:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }}
+
+      - name: Keep Alive - Update Timestamp
+        run: |
+          echo "# Last Run: $(date -u)" > .last-run
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .last-run
+          git diff --staged --quiet || git commit -m "Keep alive: $(date -u)"
+          git push || echo "Nothing to push"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Post waifu images
+        env:
+          SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
+          NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
+          DEFAULT_TAGS: ${{ vars.DEFAULT_TAGS }}
+          POST_SFW: ${{ vars.POST_SFW }}
+          POST_NSFW: ${{ vars.POST_NSFW }}
+        run: |
+          if [ "${{ vars.POST_SFW }}" = "true" ]; then
+            npm start -- --sfw
+          fi
+          if [ "${{ vars.POST_NSFW }}" = "true" ]; then
+            npm start -- --nsfw
+          fi
+        shell: bash

@@ -1,0 +1,72 @@
+name: Manual Waifu Post
+
+on:
+  workflow_dispatch:
+    inputs:
+      sfw:
+        description: 'Post SFW image'
+        required: true
+        default: true
+        type: boolean
+      nsfw:
+        description: 'Post NSFW image'
+        required: true
+        default: false
+        type: boolean
+      tags:
+        description: 'Tags to filter by (comma-separated)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Dry run (do not post to Discord)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  post-waifu:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Post waifu images
+        env:
+          SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
+          NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
+        run: |
+          FLAGS=""
+          
+          if [ "${{ github.event.inputs.sfw }}" = "true" ]; then
+            FLAGS="$FLAGS --sfw"
+          fi
+          
+          if [ "${{ github.event.inputs.nsfw }}" = "true" ]; then
+            FLAGS="$FLAGS --nsfw"
+          fi
+          
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            FLAGS="$FLAGS --dry-run"
+          fi
+          
+          if [ -n "${{ github.event.inputs.tags }}" ]; then
+            FLAGS="$FLAGS --tags ${{ github.event.inputs.tags }}"
+          fi
+          
+          echo "Running: npm start -- $FLAGS"
+          npm start -- $FLAGS
+        shell: bash

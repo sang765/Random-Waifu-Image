@@ -1,0 +1,36 @@
+{
+  "name": "random-waifu-discord",
+  "version": "1.0.0",
+  "description": "Send random waifu images from waifu.im to Discord channels via webhooks",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node src/main.ts",
+    "schedule": "node dist/scheduler.js",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "waifu",
+    "discord",
+    "webhook",
+    "anime",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
