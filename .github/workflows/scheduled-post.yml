@@ -38,11 +38,11 @@ jobs:
             exit 1
           fi
 
-      - name: Post waifu images
+      - name: Post random images
         env:
           SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
           NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
         run: |
-            npm start -- --sfw --random-tags
-            npm start -- --nsfw --random-tags
+            npm start -- --sfw --random-tags --source random
+            npm start -- --nsfw --random-tags --source random
         shell: bash
