@@ -1,4 +1,4 @@
-name: Scheduled Waifu Post
+name: Random Post
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
 jobs:
   post-waifu:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -24,6 +24,20 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
+      - name: Check vaid webhook URLs
+        env:
+          SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
+          NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SFW_WEBHOOK_URL" ]; then
+            echo "Error: SFW_WEBHOOK_URL is not set"
+            exit 1
+          fi
+          if [ -z "$NSFW_WEBHOOK_URL" ]; then
+            echo "Error: NSFW_WEBHOOK_URL is not set"
+            exit 1
+          fi
+
       - name: Post waifu images
         env:
           SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
@@ -31,10 +45,12 @@ jobs:
           POST_SFW: ${{ vars.POST_SFW }}
           POST_NSFW: ${{ vars.POST_NSFW }}
         run: |
-          if [ "${{ vars.POST_SFW }}" = "true" ]; then
-            npm start -- --random-tags
+          if [ "$POST_SFW" = "true" ]; then
+            echo "Posting SFW image..."
+            npm start -- --sfw --random-tags
           fi
-          if [ "${{ vars.POST_NSFW }}" = "true" ]; then
-            npm start -- --random-tags --nsfw
+          if [ "$POST_NSFW" = "true" ]; then
+            echo "Posting NSFW image..."
+            npm start -- --nsfw --random-tags
           fi
         shell: bash
