@@ -8,7 +8,92 @@
 import cron from 'node-cron';
 import { config, getRandomTags } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
+import { nekosClient } from './clients/nekos-client';
+import { waifuPicsClient } from './clients/waifu-pics-client';
+import { picreClient } from './clients/picre-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
+import { WaifuSource, SourceType, SourceImage } from './types/source';
+
+/**
+ * Get the image source based on configuration
+ * If 'both' or 'random' is set, randomly select one from all available sources
+ */
+function getImageSource(sourceType: SourceType): WaifuSource {
+  if (sourceType === 'both' || sourceType === 'random') {
+    // Randomly select one of the four sources
+    const random = Math.random();
+    if (random < 0.25) return waifuClient;
+    if (random < 0.50) return nekosClient;
+    if (random < 0.75) return waifuPicsClient;
+    return picreClient;
+  }
+  
+  if (sourceType === 'nekosapi') return nekosClient;
+  if (sourceType === 'waifu.pics') return waifuPicsClient;
+  if (sourceType === 'pic.re') return picreClient;
+  return waifuClient;
+}
+
+/**
+ * Get a fallback source (randomly select from all sources except the failed one)
+ */
+function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
+  const sources = [waifuClient, nekosClient, waifuPicsClient, picreClient].filter(
+    s => s.name !== excludeSource.name
+  );
+  const randomIndex = Math.floor(Math.random() * sources.length);
+  return sources[randomIndex];
+}
+
+/**
+ * Fetch image with fallback mechanism
+ * If the primary source fails (timeout, rate limit, etc.), try another source
+ */
+async function fetchImageWithFallback(
+  type: 'sfw' | 'nsfw',
+  primarySource: WaifuSource,
+  tags: string[],
+  maxRetries: number = 2
+): Promise<{ image: SourceImage | null; sourceName: string }> {
+  let currentSource = primarySource;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📥 Attempt ${attempt + 1}: Fetching ${type.toUpperCase()} image from ${currentSource.name}...`);
+      
+      const image = type === 'sfw' 
+        ? await currentSource.fetchRandomSfw(tags)
+        : await currentSource.fetchRandomNsfw(tags);
+      
+      if (image) {
+        return { image, sourceName: currentSource.name };
+      }
+      
+      // No image found, try fallback if not last attempt
+      if (attempt < maxRetries) {
+        console.log(`⚠️  No ${type.toUpperCase()} image from ${currentSource.name}, trying fallback...`);
+        currentSource = getFallbackSource(currentSource);
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`⚠️  ${currentSource.name} failed: ${lastError.message}`);
+      
+      // Try fallback if not last attempt
+      if (attempt < maxRetries) {
+        currentSource = getFallbackSource(currentSource);
+        console.log(`🔄 Falling back to ${currentSource.name}...`);
+      }
+    }
+  }
+
+  // All retries exhausted
+  if (lastError) {
+    console.error(`❌ All sources failed. Last error: ${lastError.message}`);
+  }
+  
+  return { image: null, sourceName: primarySource.name };
+}
 
 /**
  * Post waifu images to Discord
@@ -18,35 +103,43 @@ async function scheduledPost(): Promise<void> {
   console.log(`\n[${timestamp}] Running scheduled post...`);
 
   try {
+    const sourceType = config.imageSource;
+    const source = getImageSource(sourceType);
+    console.log(`📡 Using image source: ${source.name}`);
+
     // Post SFW image
     if (config.postSfw && config.sfwWebhookUrl) {
-      const sfwTags = config.defaultTags.length > 0 ? config.defaultTags : getRandomTags('sfw', 1);
+      const sfwTags = config.defaultTags.length > 0
+        ? config.defaultTags
+        : getRandomTags('sfw', 1, sourceType);
       console.log(`🏷️  SFW Tags: ${sfwTags.join(', ')}`);
-      console.log('📥 Fetching SFW image...');
-      const sfwImage = await waifuClient.fetchRandomSfw(sfwTags);
+      
+      const { image: sfwImage, sourceName: sfwSourceName } = await fetchImageWithFallback('sfw', source, sfwTags);
       
       if (sfwImage) {
         const client = new DiscordWebhookClient(config.sfwWebhookUrl);
-        await client.sendWaifuImage(sfwImage);
-        console.log(`✅ Posted SFW image: ${sfwImage.url}`);
+        await client.sendWaifuImage(sfwImage, { sourceName: sfwSourceName });
+        console.log(`✅ Posted SFW image from ${sfwSourceName}: ${sfwImage.url}`);
       } else {
-        console.warn('⚠️  No SFW image found');
+        console.warn('⚠️  No SFW image found from any source');
       }
     }
 
     // Post NSFW image
     if (config.postNsfw && config.nsfwWebhookUrl) {
-      const nsfwTags = config.defaultTags.length > 0 ? config.defaultTags : getRandomTags('nsfw', 1);
+      const nsfwTags = config.defaultTags.length > 0
+        ? config.defaultTags
+        : getRandomTags('nsfw', 1, sourceType);
       console.log(`🏷️  NSFW Tags: ${nsfwTags.join(', ')}`);
-      console.log('📥 Fetching NSFW image...');
-      const nsfwImage = await waifuClient.fetchRandomNsfw(nsfwTags);
+      
+      const { image: nsfwImage, sourceName: nsfwSourceName } = await fetchImageWithFallback('nsfw', source, nsfwTags);
       
       if (nsfwImage) {
         const client = new DiscordWebhookClient(config.nsfwWebhookUrl);
-        await client.sendWaifuImage(nsfwImage);
-        console.log(`✅ Posted NSFW image: ${nsfwImage.url}`);
+        await client.sendWaifuImage(nsfwImage, { sourceName: nsfwSourceName });
+        console.log(`✅ Posted NSFW image from ${nsfwSourceName}: ${nsfwImage.url}`);
       } else {
-        console.warn('⚠️  No NSFW image found');
+        console.warn('⚠️  No NSFW image found from any source');
       }
     }
 
@@ -70,52 +163,31 @@ function validateCronExpression(expression: string): boolean {
 /**
  * Main scheduler function
  */
-async function main(): Promise<void> {
-  console.log('🎌 Random Waifu Discord Scheduler');
-  console.log('=================================');
-  console.log(`Cron schedule: ${config.cronSchedule}`);
-  console.log(`Post SFW: ${config.postSfw}`);
-  console.log(`Post NSFW: ${config.postNsfw}`);
-  console.log(`Default tags: ${config.defaultTags.join(', ') || 'none'}`);
-  console.log('=================================\n');
+function main(): void {
+  const cronSchedule = config.cronSchedule;
 
   // Validate cron expression
-  if (!validateCronExpression(config.cronSchedule)) {
-    console.error(`❌ Invalid cron expression: ${config.cronSchedule}`);
-    console.error('Please check your CRON_SCHEDULE environment variable.');
+  if (!validateCronExpression(cronSchedule)) {
+    console.error(`❌ Invalid cron expression: ${cronSchedule}`);
+    console.error('Please check CRON_SCHEDULE in your .env file');
     process.exit(1);
   }
+
+  console.log(`⏰ Scheduler started with schedule: ${cronSchedule}`);
+  console.log(`📷 Image source: ${config.imageSource}`);
+  console.log(`📝 Post SFW: ${config.postSfw}`);
+  console.log(`🔞 Post NSFW: ${config.postNsfw}`);
+  console.log('Waiting for scheduled posts...\n');
 
   // Schedule the job
-  console.log(`⏰ Scheduling job with cron: ${config.cronSchedule}`);
-  
-  cron.schedule(config.cronSchedule, scheduledPost, {
-    scheduled: true,
-    timezone: 'UTC',
-  });
+  cron.schedule(cronSchedule, scheduledPost);
 
-  console.log('✅ Scheduler started. Press Ctrl+C to stop.\n');
-
-  // Run initial post if both webhooks are configured
-  if ((config.postSfw && config.sfwWebhookUrl) || (config.postNsfw && config.nsfwWebhookUrl)) {
-    console.log('🚀 Running initial post...');
-    await scheduledPost();
-  } else {
-    console.warn('⚠️  No webhooks configured. Please check your .env file.');
-    process.exit(1);
+  // Run immediately on startup if enabled
+  if (process.env.RUN_ON_STARTUP === 'true') {
+    console.log('🚀 RUN_ON_STARTUP is true, running initial post...');
+    scheduledPost();
   }
 }
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n👋 Shutting down scheduler...');
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  console.log('\n👋 Shutting down scheduler...');
-  process.exit(0);
-});
 
 // Run main function
 main();

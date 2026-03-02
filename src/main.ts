@@ -2,19 +2,26 @@
  * Main entry point for random-waifu-discord
  *
  * Usage:
- *   npm start -- --help              # Show help
- *   npm start                        # Post SFW image with random tags
- *   npm start -- --nsfw              # Post NSFW image with random tags
- *   npm start -- --tags waifu,maid   # Post with specific tags
- *   npm start -- --sfw --nsfw        # Post both SFW and NSFW
- *   npm start -- --random-tags 3     # Use 3 random tags
+ *   npm start -- --help                    # Show help
+ *   npm start                              # Post SFW image with random tags
+ *   npm start -- --nsfw                    # Post NSFW image with random tags
+ *   npm start -- --tags waifu,maid         # Post with specific tags
+ *   npm start -- --sfw --nsfw              # Post both SFW and NSFW
+ *   npm start -- --random-tags 3           # Use 3 random tags
+ *   npm start -- --source nekosapi         # Use NekosAPI source
+ *   npm start -- --source waifu.pics       # Use waifu.pics source
+ *   npm start -- --source pic.re           # Use pic.re source
+ *   npm start -- --source both             # Randomly select from all sources
  */
 
 import { Command } from 'commander';
 import { config, getRandomTags } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
+import { nekosClient } from './clients/nekos-client';
+import { waifuPicsClient } from './clients/waifu-pics-client';
+import { picreClient } from './clients/picre-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
-import { WaifuImage } from './types/waifu';
+import { SourceImage, SourceType, WaifuSource } from './types/source';
 
 interface CliOptions {
   sfw?: boolean;
@@ -22,27 +29,111 @@ interface CliOptions {
   tags?: string;
   randomTags?: boolean | string;
   dryRun?: boolean;
+  source?: SourceType;
 }
 
 const program = new Command();
 
 program
   .name('random-waifu-discord')
-  .description('Send random waifu images from waifu.im to Discord')
+  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, or pic.re to Discord')
   .version('1.0.0')
   .option('--sfw', 'post SFW image (overrides env config)', false)
   .option('--nsfw', 'post NSFW image (overrides env config)', false)
   .option('-t, --tags <tags>', 'comma-separated tags to filter by', '')
   .option('-r, --random-tags [count]', 'use random tags (default: 1 if no number specified)')
+  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, both, or random', config.imageSource)
   .option('--dry-run', 'fetch image but don\'t post to Discord', false)
   .parse();
 
 const options: CliOptions = program.opts();
 
+  /**
+ * Get the appropriate image source based on CLI option or config
+ */
+function getImageSource(): WaifuSource {
+  const source = options.source || config.imageSource;
+  
+  if (source === 'both' || source === 'random') {
+    // Randomly select one of the four sources
+    const random = Math.random();
+    if (random < 0.25) return waifuClient;
+    if (random < 0.50) return nekosClient;
+    if (random < 0.75) return waifuPicsClient;
+    return picreClient;
+  }
+  
+  if (source === 'nekosapi') return nekosClient;
+  if (source === 'waifu.pics') return waifuPicsClient;
+  if (source === 'pic.re') return picreClient;
+  return waifuClient;
+}
+
+/**
+ * Get a fallback source (randomly select from all sources except the failed one)
+ */
+function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
+  const sources = [waifuClient, nekosClient, waifuPicsClient, picreClient].filter(
+    s => s.name !== excludeSource.name
+  );
+  const randomIndex = Math.floor(Math.random() * sources.length);
+  return sources[randomIndex];
+}
+
+/**
+ * Fetch image with fallback mechanism
+ * If the primary source fails (timeout, rate limit, etc.), try another source
+ */
+async function fetchImageWithFallback(
+  type: 'sfw' | 'nsfw',
+  primarySource: WaifuSource,
+  tags: string[],
+  maxRetries: number = 2
+): Promise<{ image: SourceImage | null; sourceName: string }> {
+  let currentSource = primarySource;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📥 Attempt ${attempt + 1}: Fetching ${type.toUpperCase()} image from ${currentSource.name}...`);
+      
+      const image = type === 'sfw' 
+        ? await currentSource.fetchRandomSfw(tags)
+        : await currentSource.fetchRandomNsfw(tags);
+      
+      if (image) {
+        return { image, sourceName: currentSource.name };
+      }
+      
+      // No image found, try fallback if not last attempt
+      if (attempt < maxRetries) {
+        console.log(`⚠️  No ${type.toUpperCase()} image from ${currentSource.name}, trying fallback...`);
+        currentSource = getFallbackSource(currentSource);
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`⚠️  ${currentSource.name} failed: ${lastError.message}`);
+      
+      // Try fallback if not last attempt
+      if (attempt < maxRetries) {
+        currentSource = getFallbackSource(currentSource);
+        console.log(`🔄 Falling back to ${currentSource.name}...`);
+      }
+    }
+  }
+
+  // All retries exhausted
+  if (lastError) {
+    console.error(`❌ All sources failed. Last error: ${lastError.message}`);
+  }
+  
+  return { image: null, sourceName: primarySource.name };
+}
+
 /**
  * Parse tags from CLI argument, env, or generate random
  */
-function parseTags(type: 'sfw' | 'nsfw'): string[] {
+function parseTags(type: 'sfw' | 'nsfw', sourceType: SourceType): string[] {
   // If tags are specified via CLI, use them
   if (options.tags) {
     return options.tags
@@ -65,16 +156,17 @@ function parseTags(type: 'sfw' | 'nsfw'): string[] {
       randomCount = 1; // Default when --random-tags is used without value
     }
   }
-  return getRandomTags(type, randomCount);
+  return getRandomTags(type, randomCount, sourceType);
 }
 
 /**
  * Post a waifu image to Discord
  */
 async function postWaifu(
-  image: WaifuImage,
+  image: SourceImage,
   webhookUrl: string,
-  isNsfw: boolean
+  isNsfw: boolean,
+  sourceName: string
 ): Promise<void> {
   if (options.dryRun) {
     console.log(`[DRY RUN] Would post ${isNsfw ? 'NSFW' : 'SFW'} image: ${image.url}`);
@@ -84,8 +176,8 @@ async function postWaifu(
   }
 
   const client = new DiscordWebhookClient(webhookUrl);
-  await client.sendWaifuImage(image);
-  console.log(`✅ Posted ${isNsfw ? 'NSFW' : 'SFW'} image to Discord`);
+  await client.sendWaifuImage(image, { sourceName });
+  console.log(`✅ Posted ${isNsfw ? 'NSFW' : 'SFW'} image from ${sourceName} to Discord`);
 }
 
 /**
@@ -96,22 +188,26 @@ async function main(): Promise<void> {
     // Determine what to post
     const shouldPostSfw = options.sfw || (!options.nsfw && config.postSfw);
     const shouldPostNsfw = options.nsfw || config.postNsfw;
+    const sourceType = options.source || config.imageSource;
+    const source = getImageSource();
+
+    console.log(`📡 Using image source: ${source.name}`);
 
     // Post SFW image
     if (shouldPostSfw) {
       if (!config.sfwWebhookUrl) {
         console.warn('⚠️  SFW_WEBHOOK_URL not set, skipping SFW post');
       } else {
-        const sfwTags = parseTags('sfw');
+        const sfwTags = parseTags('sfw', sourceType);
         console.log(`🏷️  SFW Tags: ${sfwTags.join(', ')}`);
-        console.log('📥 Fetching SFW image...');
-        const sfwImage = await waifuClient.fetchRandomSfw(sfwTags);
+        
+        const { image: sfwImage, sourceName: sfwSourceName } = await fetchImageWithFallback('sfw', source, sfwTags);
         
         if (sfwImage) {
-          console.log(`🖼️  Found SFW image: ${sfwImage.url}`);
-          await postWaifu(sfwImage, config.sfwWebhookUrl, false);
+          console.log(`🖼️  Found SFW image from ${sfwSourceName}: ${sfwImage.url}`);
+          await postWaifu(sfwImage, config.sfwWebhookUrl, false, sfwSourceName);
         } else {
-          console.warn('⚠️  No SFW image found matching criteria');
+          console.warn('⚠️  No SFW image found from any source');
         }
       }
     }
@@ -121,16 +217,16 @@ async function main(): Promise<void> {
       if (!config.nsfwWebhookUrl) {
         console.warn('⚠️  NSFW_WEBHOOK_URL not set, skipping NSFW post');
       } else {
-        const nsfwTags = parseTags('nsfw');
+        const nsfwTags = parseTags('nsfw', sourceType);
         console.log(`🏷️  NSFW Tags: ${nsfwTags.join(', ')}`);
-        console.log('📥 Fetching NSFW image...');
-        const nsfwImage = await waifuClient.fetchRandomNsfw(nsfwTags);
+        
+        const { image: nsfwImage, sourceName: nsfwSourceName } = await fetchImageWithFallback('nsfw', source, nsfwTags);
         
         if (nsfwImage) {
-          console.log(`🖼️  Found NSFW image: ${nsfwImage.url}`);
-          await postWaifu(nsfwImage, config.nsfwWebhookUrl, true);
+          console.log(`🖼️  Found NSFW image from ${nsfwSourceName}: ${nsfwImage.url}`);
+          await postWaifu(nsfwImage, config.nsfwWebhookUrl, true, nsfwSourceName);
         } else {
-          console.warn('⚠️  No NSFW image found matching criteria');
+          console.warn('⚠️  No NSFW image found from any source');
         }
       }
     }

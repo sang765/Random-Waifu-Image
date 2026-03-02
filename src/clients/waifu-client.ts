@@ -10,10 +10,12 @@ import {
   WaifuFetchOptions,
   NsfwFilter,
 } from '../types/waifu';
+import { SourceImage, WaifuSource } from '../types/source';
 
-export class WaifuClient {
+export class WaifuClient implements WaifuSource {
   private readonly client: AxiosInstance;
   private readonly baseUrl = 'https://api.waifu.im';
+  readonly name = 'waifu.im';
 
   constructor() {
     this.client = axios.create({
@@ -27,9 +29,29 @@ export class WaifuClient {
   }
 
   /**
+   * Convert waifu.im image to unified SourceImage format
+   */
+  private normalizeImage(image: WaifuImage): SourceImage {
+    return {
+      id: image.id,
+      url: image.url,
+      width: image.width,
+      height: image.height,
+      source: image.source,
+      artists: image.artists?.map(artist => ({
+        name: artist.name,
+        url: artist.pixiv || undefined,
+      })) || [],
+      tags: image.tags?.map(tag => ({ name: tag.name })) || [],
+      isNsfw: image.isNsfw,
+      dominantColor: image.dominantColor,
+    };
+  }
+
+  /**
    * Fetch random images from waifu.im API
    */
-  async fetchImages(options: WaifuFetchOptions = {}): Promise<WaifuImage[]> {
+  async fetchImages(options: WaifuFetchOptions = {}): Promise<SourceImage[]> {
     const params = new URLSearchParams();
 
     // Add included tags
@@ -63,7 +85,7 @@ export class WaifuClient {
 
     try {
       const response = await this.client.get<WaifuApiResponse>(`/images?${params.toString()}`);
-      return response.data.items;
+      return response.data.items.map(img => this.normalizeImage(img));
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axiosError.response) {
@@ -81,7 +103,7 @@ export class WaifuClient {
   /**
    * Fetch a single random SFW image
    */
-  async fetchRandomSfw(tags?: string[]): Promise<WaifuImage | null> {
+  async fetchRandomSfw(tags?: string[]): Promise<SourceImage | null> {
     const images = await this.fetchImages({
       includedTags: tags,
       isNsfw: 'false',
@@ -93,7 +115,7 @@ export class WaifuClient {
   /**
    * Fetch a single random NSFW image
    */
-  async fetchRandomNsfw(tags?: string[]): Promise<WaifuImage | null> {
+  async fetchRandomNsfw(tags?: string[]): Promise<SourceImage | null> {
     const images = await this.fetchImages({
       includedTags: tags,
       isNsfw: 'true',

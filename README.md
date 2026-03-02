@@ -1,6 +1,6 @@
 # 🌸 Random Waifu Discord
 
-Send random waifu images from [waifu.im](https://waifu.im) to Discord channels via webhooks.
+Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re)) to Discord channels via webhooks.
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@ Send random waifu images from [waifu.im](https://waifu.im) to Discord channels v
 
 ## ✨ Features
 
-- 🖼️ **Random Waifu Images** - Fetches random anime images from waifu.im API
+- 🖼️ **Multiple Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, and pic.re
 - 🔒 **SFW/NSFW Support** - Separate webhooks for SFW and NSFW content
 - 🏷️ **Tag Filtering** - Filter images by specific tags (waifu, maid, etc.)
 - ⏰ **Scheduling** - Automated posting via cron jobs or GitHub Actions
@@ -91,6 +91,7 @@ npm run schedule
 |----------|-------------|---------|
 | `SFW_WEBHOOK_URL` | Discord webhook URL for SFW channel | (required) |
 | `NSFW_WEBHOOK_URL` | Discord webhook URL for NSFW channel | (required) |
+| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, both, random | `waifu.im` |
 | `DEFAULT_TAGS` | Comma-separated tags to filter by | (empty) |
 | `CRON_SCHEDULE` | Cron expression for scheduling | `0 */6 * * *` |
 | `POST_SFW` | Enable SFW posting | `true` |
@@ -143,6 +144,33 @@ GitHub disables scheduled workflows after 60 days of repository inactivity. To p
   - Trigger from Actions tab with custom options
   - Choose SFW/NSFW, tags, and dry-run mode
 
+## 🖼️ Image Sources
+
+The bot supports multiple anime image APIs. Choose your source via the `IMAGE_SOURCE` environment variable or `--source` CLI option.
+
+| Source | API | Features | NSFW |
+|--------|-----|----------|------|
+| `waifu.im` | [waifu.im](https://waifu.im) | 100K+ images, artist credits, dominant color | ✅ Yes |
+| `nekosapi` | [nekosapi.com](https://nekosapi.com) | Character & artist data, ratings | ✅ Yes |
+| `waifu.pics` | [waifu.pics](https://waifu.pics) | Action categories (hug, kiss, etc.) | ✅ Yes |
+| `pic.re` | [pic.re](https://pic.re) | 66K+ images, AI-filtered SFW only | ❌ No |
+| `both` / `random` | - | Randomly selects from all sources | ✅ Yes* |
+
+*Pic.re is always SFW regardless of this setting
+
+### Source Selection Examples
+
+```bash
+# Use specific source
+npm start -- --source pic.re
+
+# Use random source selection
+npm start -- --source random
+
+# From .env
+IMAGE_SOURCE=pic.re
+```
+
 ## 🏷️ Available Tags
 
 Popular waifu.im tags include:
@@ -182,9 +210,16 @@ random-waifu-discord/
 ├── src/
 │   ├── clients/
 │   │   ├── waifu-client.ts      # waifu.im API integration
+│   │   ├── nekos-client.ts      # nekosapi.com API integration
+│   │   ├── waifu-pics-client.ts # waifu.pics API integration
+│   │   ├── picre-client.ts      # pic.re API integration
 │   │   └── discord-webhook.ts   # Discord webhook sender
 │   ├── types/
-│   │   └── waifu.ts             # TypeScript interfaces
+│   │   ├── waifu.ts             # waifu.im types
+│   │   ├── nekos.ts             # nekosapi.com types
+│   │   ├── waifupics.ts         # waifu.pics types
+│   │   ├── picre.ts             # pic.re types
+│   │   └── source.ts            # Unified source interface
 │   ├── utils/
 │   │   └── config.ts            # Environment config
 │   ├── main.ts                  # CLI entry point

@@ -3,7 +3,7 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { WaifuImage } from '../types/waifu';
+import { SourceImage, hexToDecimal } from '../types/source';
 
 export interface DiscordEmbed {
   title?: string;
@@ -65,23 +65,24 @@ export class DiscordWebhookClient {
    * Send a waifu image as a rich embed
    */
   async sendWaifuImage(
-    image: WaifuImage,
+    image: SourceImage,
     options: {
       includeTags?: boolean;
       includeArtist?: boolean;
       includeSource?: boolean;
+      sourceName?: string;
     } = {}
   ): Promise<void> {
-    const { includeTags = true, includeArtist = true, includeSource = true } = options;
+    const { includeTags = true, includeArtist = true, includeSource = true, sourceName = 'waifu.im' } = options;
 
     const embed: DiscordEmbed = {
       title: '🌸 Random Waifu',
-      color: this.hexToDecimal(image.dominantColor) || 0xffb6c1,
+      color: hexToDecimal(image.dominantColor) || 0xffb6c1,
       image: {
         url: image.url,
       },
       footer: {
-        text: `ID: ${image.id} | Resolution: ${image.width}x${image.height}`,
+        text: `ID: ${image.id} | Resolution: ${image.width ?? '?'}x${image.height ?? '?'}`,
       },
       timestamp: new Date().toISOString(),
     };
@@ -93,8 +94,8 @@ export class DiscordWebhookClient {
         name: `Artist: ${artist.name}`,
       };
 
-      if (artist.pixiv) {
-        embed.author.url = artist.pixiv;
+      if (artist.url) {
+        embed.author.url = artist.url;
       }
     }
 
@@ -129,9 +130,22 @@ export class DiscordWebhookClient {
       });
     }
 
+    // Determine avatar URL based on source
+    let avatarUrl: string | undefined;
+    if (sourceName === 'Nekos API') {
+      avatarUrl = 'https://nekosapi.com/branding/logo/logo.png';
+    } else if (sourceName === 'waifu.pics') {
+      avatarUrl = 'https://waifu.pics/favicon.png';
+    } else if (sourceName === 'pic.re') {
+      // Pic.re has no official icon/logo - leave avatar empty as requested
+      avatarUrl = undefined;
+    } else {
+      avatarUrl = 'https://www.waifu.im/favicon.png';
+    }
+
     const payload: DiscordWebhookPayload = {
-      username: 'waifu.im',
-      avatar_url: 'https://www.waifu.im/favicon.png',
+      username: sourceName,
+      avatar_url: avatarUrl,
       embeds: [embed],
     };
 
@@ -172,15 +186,4 @@ export class DiscordWebhookClient {
     }
   }
 
-  /**
-   * Convert hex color to decimal
-   */
-  private hexToDecimal(hex: string): number | undefined {
-    try {
-      const cleanHex = hex.replace('#', '');
-      return parseInt(cleanHex, 16);
-    } catch {
-      return undefined;
-    }
-  }
 }
