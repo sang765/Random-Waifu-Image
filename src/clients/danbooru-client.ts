@@ -110,6 +110,18 @@ export class DanbooruClient implements WaifuSource {
       'e': 'explicit',
     };
 
+    // Parse copyright/series tags
+    const copyright = parseTagString(post.tag_string_copyright);
+
+    // Parse general tags
+    const generalTags = parseTagString(post.tag_string_general);
+
+    // Parse meta tags
+    const metaTags = parseTagString(post.tag_string_meta);
+
+    // Build Danbooru post URL
+    const postUrl = `https://danbooru.donmai.us/posts/${post.id}`;
+
     return {
       id: post.id,
       url,
@@ -125,6 +137,14 @@ export class DanbooruClient implements WaifuSource {
       favorites: post.fav_count,
       createdAt: post.created_at,
       contentHash: post.md5,
+      score: post.score,
+      upvotes: post.up_score,
+      downvotes: post.down_score,
+      copyright: copyright.length > 0 ? copyright : undefined,
+      generalTags: generalTags.length > 0 ? generalTags : undefined,
+      metaTags: metaTags.length > 0 ? metaTags : undefined,
+      fileExt: post.file_ext,
+      postUrl,
     };
   }
 

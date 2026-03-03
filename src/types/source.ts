@@ -53,6 +53,22 @@ export interface SourceImage {
   contentHash?: string;
   /** Anime name (for GIFs from nekos.best) */
   animeName?: string;
+  /** Score (upvotes - downvotes) for Danbooru posts */
+  score?: number;
+  /** Upvote count for Danbooru posts */
+  upvotes?: number;
+  /** Downvote count for Danbooru posts */
+  downvotes?: number;
+  /** Copyright/Series tags for Danbooru posts */
+  copyright?: string[];
+  /** General tags for Danbooru posts */
+  generalTags?: string[];
+  /** Meta tags for Danbooru posts */
+  metaTags?: string[];
+  /** File extension for Danbooru posts */
+  fileExt?: string;
+  /** Danbooru post URL */
+  postUrl?: string;
 }
 
 /**

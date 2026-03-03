@@ -188,12 +188,17 @@ export class DiscordWebhookClient {
       if (image.fileSize) {
         footerParts.push(`📁 ${formatFileSize(image.fileSize)}`);
       }
-      
+
+      // Add file extension for Danbooru
+      if (image.fileExt) {
+        footerParts.push(`📝 ${image.fileExt.toUpperCase()}`);
+      }
+
       // Add favorites if available
       if (image.favorites !== undefined && image.favorites > 0) {
         footerParts.push(`💖 ${formatNumber(image.favorites)}`);
       }
-      
+
       // Add resolution if available
       if (image.width && image.height) {
         footerParts.push(`📐 ${image.width}x${image.height}`);
@@ -247,6 +252,27 @@ export class DiscordWebhookClient {
       });
     }
 
+    // Add copyright/series info for Danbooru
+    if (image.copyright && image.copyright.length > 0) {
+      const copyrightList = image.copyright.slice(0, 3).join(', ');
+      embed.fields.push({
+        name: '📺 Series',
+        value: copyrightList + (image.copyright.length > 3 ? ` (+${image.copyright.length - 3} more)` : ''),
+        inline: true,
+      });
+    }
+
+    // Add score info for Danbooru (upvotes/downvotes)
+    if (image.score !== undefined) {
+      const upvotes = image.upvotes || 0;
+      const downvotes = image.downvotes || 0;
+      embed.fields.push({
+        name: '📊 Score',
+        value: `**${image.score}** ⬆️ ${upvotes} ⬇️ ${downvotes}`,
+        inline: true,
+      });
+    }
+
     // Add source link
     if (includeSource && image.source) {
       embed.fields.push({
@@ -256,12 +282,44 @@ export class DiscordWebhookClient {
       });
     }
 
-    // Add tags
+    // Add Danbooru post link
+    if (image.postUrl) {
+      embed.fields.push({
+        name: '🔴 Danbooru',
+        value: `[View Post](${image.postUrl})`,
+        inline: true,
+      });
+    }
+
+    // Add tags (respecting Discord's 1024 character limit per field)
     if (includeTags && image.tags && image.tags.length > 0) {
-      const tagNames = image.tags.map(tag => `\`${tag.name}\``).slice(0, 8);
+      const maxFieldLength = 1024;
+      const tagNames = image.tags.map(tag => `\`${tag.name}\``);
+
+      let tagValue = '';
+      let includedCount = 0;
+
+      for (const tag of tagNames) {
+        // Check if adding this tag would exceed the limit (including space separator and potential "+X more" text)
+        const additionalText = includedCount > 0 ? ' ' : '';
+        const remainingText = image.tags.length > includedCount + 1 ? ` (+${image.tags.length - includedCount - 1} more)` : '';
+
+        if (tagValue.length + additionalText.length + tag.length + remainingText.length <= maxFieldLength) {
+          tagValue += (includedCount > 0 ? ' ' : '') + tag;
+          includedCount++;
+        } else {
+          break;
+        }
+      }
+
+      // Add "+X more" if not all tags fit
+      if (includedCount < image.tags.length) {
+        tagValue += ` (+${image.tags.length - includedCount} more)`;
+      }
+
       embed.fields.push({
         name: '🏷️ Tags',
-        value: tagNames.join(' ') || 'No tags',
+        value: tagValue || 'No tags',
         inline: false,
       });
     }
