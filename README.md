@@ -1,6 +1,6 @@
 # 🌸 Random Waifu Discord
 
-Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re)) to Discord channels via webhooks.
+Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best)) to Discord channels via webhooks.
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -8,12 +8,14 @@ Send random anime images from multiple sources ([waifu.im](https://waifu.im), [n
 
 ## ✨ Features
 
-- 🖼️ **Multiple Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, and pic.re
+- 🖼️ **5 Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, and nekos.best
 - 🔒 **SFW/NSFW Support** - Separate webhooks for SFW and NSFW content
-- 🏷️ **Tag Filtering** - Filter images by specific tags (waifu, maid, etc.)
+- 🏷️ **Tag Filtering** - Filter images by specific tags (varies by source)
 - ⏰ **Scheduling** - Automated posting via cron jobs or GitHub Actions
 - 🖥️ **CLI Interface** - Easy-to-use command line interface
-- 📝 **Rich Embeds** - Discord embeds with artist credits and source links
+- 📝 **Rich Embeds** - Discord embeds with artist credits, source links, and resolution info
+- 🔄 **Fallback Mechanism** - Automatically switches sources if one fails
+- 🎭 **Webhook Profiles** - Source-specific webhook usernames and avatars for all sources
 
 ## 🚀 Quick Start
 
@@ -26,7 +28,7 @@ Send random anime images from multiple sources ([waifu.im](https://waifu.im), [n
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/random-waifu-discord.git
+git clone https://github.com/sang765/Random-Waifu-Image.git
 cd random-waifu-discord
 
 # Install dependencies
@@ -69,6 +71,15 @@ npm start -- --sfw --nsfw
 # Post with specific tags
 npm start -- --tags "waifu,maid"
 
+# Use specific source
+npm start -- --source nekos.best
+npm start -- --source waifu.pics
+npm start -- --source pic.re
+npm start -- --source nekosapi
+
+# Random source selection
+npm start -- --source random
+
 # Dry run (fetch but don't post)
 npm start -- --dry-run
 
@@ -91,7 +102,7 @@ npm run schedule
 |----------|-------------|---------|
 | `SFW_WEBHOOK_URL` | Discord webhook URL for SFW channel | (required) |
 | `NSFW_WEBHOOK_URL` | Discord webhook URL for NSFW channel | (required) |
-| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, both, random | `waifu.im` |
+| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, both, random | `random` |
 | `DEFAULT_TAGS` | Comma-separated tags to filter by | (empty) |
 | `CRON_SCHEDULE` | Cron expression for scheduling | `0 */6 * * *` |
 | `POST_SFW` | Enable SFW posting | `true` |
@@ -121,6 +132,7 @@ This project includes GitHub Actions workflows for automated posting:
    - `POST_SFW`: `true` or `false`
    - `POST_NSFW`: `true` or `false`
    - `DEFAULT_TAGS`: e.g., `waifu,maid`
+   - `IMAGE_SOURCE`: e.g., `random`, `waifu.im`, `nekos.best`
 
 ### Keep Alive (PAT Token)
 
@@ -142,39 +154,43 @@ GitHub disables scheduled workflows after 60 days of repository inactivity. To p
 
 - **Manual Dispatch** (`.github/workflows/manual-dispatch.yml`)
   - Trigger from Actions tab with custom options
-  - Choose SFW/NSFW, tags, and dry-run mode
+  - Choose SFW/NSFW, tags, image source, and dry-run mode
 
 ## 🖼️ Image Sources
 
 The bot supports multiple anime image APIs. Choose your source via the `IMAGE_SOURCE` environment variable or `--source` CLI option.
 
-| Source | API | Features | NSFW |
-|--------|-----|----------|------|
-| `waifu.im` | [waifu.im](https://waifu.im) | 100K+ images, artist credits, dominant color | ✅ Yes |
-| `nekosapi` | [nekosapi.com](https://nekosapi.com) | Character & artist data, ratings | ✅ Yes |
-| `waifu.pics` | [waifu.pics](https://waifu.pics) | Action categories (hug, kiss, etc.) | ✅ Yes |
-| `pic.re` | [pic.re](https://pic.re) | 66K+ images, AI-filtered SFW only | ❌ No |
-| `both` / `random` | - | Randomly selects from all sources | ✅ Yes* |
+| Source | API | Features | NSFW | Content Types |
+|--------|-----|----------|------|---------------|
+| `waifu.im` | [waifu.im](https://waifu.im) | 100K+ images, artist credits, dominant color | ✅ Yes | Static images |
+| `nekosapi` | [nekosapi.com](https://nekosapi.com) | Character & artist data, ratings | ✅ Yes | Static images |
+| `waifu.pics` | [waifu.pics](https://waifu.pics) | Action categories (hug, kiss, etc.) | ✅ Yes | Static images |
+| `pic.re` | [pic.re](https://pic.re) | 66K+ images, AI-filtered SFW only | ❌ No | Static images |
+| `nekos.best` | [nekos.best](https://nekos.best) | GIF reactions, image categories | ❌ No | Images & GIFs |
+| `both` / `random` | - | Randomly selects from all sources | ✅ Yes* | Mixed |
 
-*Pic.re is always SFW regardless of this setting
+*Pic.re and nekos.best are always SFW regardless of this setting
 
 ### Source Selection Examples
 
 ```bash
 # Use specific source
 npm start -- --source pic.re
+npm start -- --source nekos.best
 
 # Use random source selection
 npm start -- --source random
 
 # From .env
-IMAGE_SOURCE=pic.re
+IMAGE_SOURCE=nekos.best
 ```
 
 ## 🏷️ Available Tags
 
-Popular waifu.im tags include:
+Tags vary by source. Here are the available tags for each:
 
+### waifu.im Tags
+Popular tags include:
 - `waifu` - Classic waifu characters
 - `maid` - Maid outfits
 - `marin-kitagawa` - Marin from My Dress-Up Darling
@@ -183,8 +199,28 @@ Popular waifu.im tags include:
 - `selfies` - Selfie-style images
 - `uniform` - Uniform outfits
 - `mori-calliope` - Calliope from Hololive
+- `hentai`, `ecchi`, `ero` - NSFW tags
 
 See all available tags: `curl https://api.waifu.im/tags`
+
+### nekosapi Tags
+- Character tags: `girl`, `boy`
+- Hair tags: `blonde_hair`, `blue_hair`, `brown_hair`, `green_hair`, `pink_hair`, `purple_hair`, `red_hair`, `white_hair`, `long_hair`, `short_hair`, `animal_ears`
+- Eye tags: `blue_eyes`, `brown_eyes`, `green_eyes`, `purple_eyes`, `red_eyes`, `yellow_eyes`
+- NSFW uses `rating=explicit` parameter
+
+### waifu.pics Categories
+- **SFW**: `waifu`, `neko`, `shinobu`, `megumin`, `bully`, `cuddle`, `cry`, `hug`, `awoo`, `kiss`, `lick`, `pat`, `smug`, `bonk`, `yeet`, `blush`, `smile`, `wave`, `highfive`, `handhold`, `nom`, `bite`, `glomp`, `slap`, `kill`, `kick`, `happy`, `wink`, `poke`, `dance`, `cringe`
+- **NSFW**: `waifu`, `neko`, `trap`, `blowjob`
+
+### pic.re Tags (SFW only)
+- Hair: `long_hair`, `short_hair`, `blonde_hair`, `blue_hair`, `brown_hair`, `green_hair`, `pink_hair`, `purple_hair`, `red_hair`, `white_hair`, `black_hair`
+- Eyes: `blue_eyes`, `brown_eyes`, `green_eyes`, `purple_eyes`, `red_eyes`, `yellow_eyes`
+- Other: `girl`, `boy`, `original`, `blush`, `smile`, `open_mouth`, `ahoge`, `animal_ears`, `bangs`, `breasts`, `uniform`, `school_uniform`
+
+### nekos.best Categories (SFW only)
+- **Image categories**: `neko`, `waifu`, `husbando`, `kitsune`
+- **GIF reactions**: `hug`, `kiss`, `cuddle`, `pat`, `poke`, `tickle`, `slap`, `bonk`, `wave`, `wink`, `smile`, `blush`, `cry`, `happy`, `sleep`, `dance`, `kick`, `punch`, `shoot`, `stare`, `think`, `confused`, `angry`, `baka`, `bite`, `blowkiss`, `clap`, `facepalm`, `feed`, `handhold`, `handshake`, `highfive`, `laugh`, `lurk`, `nod`, `nom`, `nope`, `peck`, `pout`, `run`, `salute`, `shrug`, `sip`, `smug`, `spin`, `tableflip`, `teehee`, `thumbsup`, `wag`, `yawn`, `yeet`, `shocked`, `bleh`, `bored`, `nya`, `lappillow`, `carry`, `kabedon`, `shake`
 
 ## 🛠️ Development
 
@@ -205,25 +241,27 @@ npm run lint
 random-waifu-discord/
 ├── .github/
 │   └── workflows/
-│       ├── scheduled-post.yml
-│       └── manual-dispatch.yml
+│       ├── scheduled-post.yml    # Automated posting workflow
+│       └── manual-dispatch.yml   # Manual trigger workflow
 ├── src/
 │   ├── clients/
-│   │   ├── waifu-client.ts      # waifu.im API integration
-│   │   ├── nekos-client.ts      # nekosapi.com API integration
-│   │   ├── waifu-pics-client.ts # waifu.pics API integration
-│   │   ├── picre-client.ts      # pic.re API integration
-│   │   └── discord-webhook.ts   # Discord webhook sender
+│   │   ├── waifu-client.ts       # waifu.im API integration
+│   │   ├── nekos-client.ts       # nekosapi.com API integration
+│   │   ├── waifu-pics-client.ts  # waifu.pics API integration
+│   │   ├── picre-client.ts       # pic.re API integration
+│   │   ├── nekos-best-client.ts  # nekos.best API integration
+│   │   └── discord-webhook.ts    # Discord webhook sender
 │   ├── types/
-│   │   ├── waifu.ts             # waifu.im types
-│   │   ├── nekos.ts             # nekosapi.com types
-│   │   ├── waifupics.ts         # waifu.pics types
-│   │   ├── picre.ts             # pic.re types
-│   │   └── source.ts            # Unified source interface
+│   │   ├── waifu.ts              # waifu.im types
+│   │   ├── nekos.ts              # nekosapi.com types
+│   │   ├── waifupics.ts          # waifu.pics types
+│   │   ├── picre.ts              # pic.re types
+│   │   ├── nekosbest.ts          # nekos.best types
+│   │   └── source.ts             # Unified source interface
 │   ├── utils/
-│   │   └── config.ts            # Environment config
-│   ├── main.ts                  # CLI entry point
-│   └── scheduler.ts             # Cron scheduler
+│   │   └── config.ts             # Environment config & tags
+│   ├── main.ts                   # CLI entry point
+│   └── scheduler.ts              # Cron scheduler
 ├── .env.example
 ├── .gitignore
 ├── package.json
@@ -248,11 +286,11 @@ Repeat for NSFW channel if desired.
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🙏 Credits
+## 🔄 Changelog
 
-- [waifu.im](https://waifu.im) - API for anime images
-- [Discord](https://discord.com) - For webhook integration
-
----
-
-Made with 💖 and anime
+### Recent Updates
+- **Added**: nekos.best support with 60+ GIF reaction categories
+- **Added**: Source-specific webhook profiles (usernames and avatars)
+- **Fixed**: NekosAPI tag filtering now works correctly
+- **Fixed**: Resolution display in Discord embeds
+- **Improved**: Fallback mechanism when sources fail
