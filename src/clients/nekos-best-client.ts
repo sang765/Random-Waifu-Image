@@ -76,6 +76,9 @@ export class NekosBestClient implements WaifuSource {
       width: undefined,
       height: undefined,
       dominantColor: undefined,
+      isAnimated: isGif,
+      animeName: result.anime_name,
+      rating: 'safe', // nekos.best is SFW-only
     };
   }
 

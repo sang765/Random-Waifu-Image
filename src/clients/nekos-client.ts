@@ -47,6 +47,9 @@ export class NekosClient implements WaifuSource {
       dominantColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
 
+    // Extract character names
+    const characters = image.characters?.map(char => char.name) || [];
+
     return {
       id: image.id,
       url: image.url,
@@ -57,6 +60,10 @@ export class NekosClient implements WaifuSource {
       tags: image.tags?.map(tag => ({ name: tag })) || [],
       isNsfw: image.nsfw || image.rating === 'explicit' || image.rating === 'borderline',
       dominantColor,
+      description: image.description || undefined,
+      rating: image.rating,
+      characters: characters.length > 0 ? characters : undefined,
+      createdAt: image.created_at,
     };
   }
 

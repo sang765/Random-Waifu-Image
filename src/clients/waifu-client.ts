@@ -45,6 +45,10 @@ export class WaifuClient implements WaifuSource {
       tags: image.tags?.map(tag => ({ name: tag.name })) || [],
       isNsfw: image.isNsfw,
       dominantColor: image.dominantColor,
+      isAnimated: image.isAnimated,
+      fileSize: image.byteSize,
+      favorites: image.favorites,
+      createdAt: image.uploadedAt,
     };
   }
 

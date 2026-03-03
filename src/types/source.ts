@@ -4,6 +4,11 @@
  */
 
 /**
+ * Content rating levels for images
+ */
+export type ContentRating = 'safe' | 'suggestive' | 'borderline' | 'explicit';
+
+/**
  * Normalized image format that works across all sources
  */
 export interface SourceImage {
@@ -30,6 +35,24 @@ export interface SourceImage {
   isNsfw: boolean;
   /** Dominant color for embed theming */
   dominantColor?: string;
+  /** Image description/caption (NekosAPI) */
+  description?: string;
+  /** Content rating: safe, suggestive, borderline, explicit (NekosAPI) */
+  rating?: ContentRating;
+  /** Character names featured in the image (NekosAPI) */
+  characters?: string[];
+  /** File size in bytes (waifu.im) */
+  fileSize?: number;
+  /** Number of favorites/likes (waifu.im) */
+  favorites?: number;
+  /** Upload/creation date (ISO string) */
+  createdAt?: string;
+  /** Whether the image is animated/GIF */
+  isAnimated?: boolean;
+  /** Content hash (MD5 for Pic.re) */
+  contentHash?: string;
+  /** Anime name (for GIFs from nekos.best) */
+  animeName?: string;
 }
 
 /**

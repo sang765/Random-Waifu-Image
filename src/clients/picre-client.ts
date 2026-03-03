@@ -45,6 +45,8 @@ export class PicreClient implements WaifuSource {
       tags: image.tags?.map(tag => ({ name: tag })) || [],
       isNsfw: false, // Pic.re is SFW-only by design
       dominantColor: undefined, // API doesn't provide dominant color
+      contentHash: image.md5,
+      isAnimated: image.file_url?.toLowerCase().endsWith('.gif') || false,
     };
   }
 
