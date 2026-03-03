@@ -1,6 +1,6 @@
 # 🌸 Random Waifu Discord
 
-Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best)) to Discord channels via webhooks.
+Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best), [danbooru](https://danbooru.donmai.us)) to Discord channels via webhooks.
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@ Send random anime images from multiple sources ([waifu.im](https://waifu.im), [n
 
 ## ✨ Features
 
-- 🖼️ **5 Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, and nekos.best
+- 🖼️ **6 Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, and danbooru
 - 🔒 **SFW/NSFW Support** - Separate webhooks for SFW and NSFW content
 - 🏷️ **Tag Filtering** - Filter images by specific tags (varies by source)
 - ⏰ **Scheduling** - Automated posting via cron jobs or GitHub Actions
@@ -76,6 +76,10 @@ npm start -- --source nekos.best
 npm start -- --source waifu.pics
 npm start -- --source pic.re
 npm start -- --source nekosapi
+npm start -- --source danbooru
+
+# Use danbooru with tags
+npm start -- --source danbooru --tags "1girl,smile"
 
 # Random source selection
 npm start -- --source random
@@ -102,7 +106,9 @@ npm run schedule
 |----------|-------------|---------|
 | `SFW_WEBHOOK_URL` | Discord webhook URL for SFW channel | (required) |
 | `NSFW_WEBHOOK_URL` | Discord webhook URL for NSFW channel | (required) |
-| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, both, random | `random` |
+| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, danbooru, both, random | `random` |
+| `DANBOORU_USERNAME` | Danbooru username (optional, required for danbooru source) | (empty) |
+| `DANBOORU_API_KEY` | Danbooru API key (optional, required for danbooru source) | (empty) |
 | `DEFAULT_TAGS` | Comma-separated tags to filter by | (empty) |
 | `CRON_SCHEDULE` | Cron expression for scheduling | `0 */6 * * *` |
 | `POST_SFW` | Enable SFW posting | `true` |
@@ -127,6 +133,8 @@ This project includes GitHub Actions workflows for automated posting:
 3. Add your webhook URLs as **Repository secrets**:
    - `SFW_WEBHOOK_URL`
    - `NSFW_WEBHOOK_URL`
+   - `DANBOORU_USERNAME` (optional, for danbooru source)
+   - `DANBOORU_API_KEY` (optional, for danbooru source)
    - `PAT` - Personal Access Token for keep-alive (see below)
 4. Add configuration as **Repository variables**:
    - `POST_SFW`: `true` or `false`
@@ -167,6 +175,7 @@ The bot supports multiple anime image APIs. Choose your source via the `IMAGE_SO
 | `waifu.pics` | [waifu.pics](https://waifu.pics) | Action categories (hug, kiss, etc.) | ✅ Yes | Static images |
 | `pic.re` | [pic.re](https://pic.re) | 66K+ images, AI-filtered SFW only | ❌ No | Static images |
 | `nekos.best` | [nekos.best](https://nekos.best) | GIF reactions, image categories | ❌ No | Images & GIFs |
+| `danbooru` | [danbooru.donmai.us](https://danbooru.donmai.us) | 6M+ images, extensive tagging | ✅ Yes | Static images |
 | `both` / `random` | - | Randomly selects from all sources | ✅ Yes* | Mixed |
 
 *Pic.re and nekos.best are always SFW regardless of this setting
@@ -177,6 +186,7 @@ The bot supports multiple anime image APIs. Choose your source via the `IMAGE_SO
 # Use specific source
 npm start -- --source pic.re
 npm start -- --source nekos.best
+npm start -- --source danbooru
 
 # Use random source selection
 npm start -- --source random
@@ -184,6 +194,20 @@ npm start -- --source random
 # From .env
 IMAGE_SOURCE=nekos.best
 ```
+
+### Danbooru Setup
+
+To use Danbooru as an image source, you need to obtain API credentials:
+
+1. Create an account at [danbooru.donmai.us](https://danbooru.donmai.us)
+2. Go to your **Profile** and click **Generate API key**
+3. Add your credentials to `.env`:
+   ```env
+   DANBOORU_USERNAME=your_username
+   DANBOORU_API_KEY=your_api_key
+   ```
+
+**Note:** Danbooru requires a valid User-Agent header. The bot automatically sets this to `BotName/Version (+Contact URL)` format to comply with their API requirements.
 
 ## 🏷️ Available Tags
 
@@ -222,6 +246,16 @@ See all available tags: `curl https://api.waifu.im/tags`
 - **Image categories**: `neko`, `waifu`, `husbando`, `kitsune`
 - **GIF reactions**: `hug`, `kiss`, `cuddle`, `pat`, `poke`, `tickle`, `slap`, `bonk`, `wave`, `wink`, `smile`, `blush`, `cry`, `happy`, `sleep`, `dance`, `kick`, `punch`, `shoot`, `stare`, `think`, `confused`, `angry`, `baka`, `bite`, `blowkiss`, `clap`, `facepalm`, `feed`, `handhold`, `handshake`, `highfive`, `laugh`, `lurk`, `nod`, `nom`, `nope`, `peck`, `pout`, `run`, `salute`, `shrug`, `sip`, `smug`, `spin`, `tableflip`, `teehee`, `thumbsup`, `wag`, `yawn`, `yeet`, `shocked`, `bleh`, `bored`, `nya`, `lappillow`, `carry`, `kabedon`, `shake`
 
+### Danbooru Tags
+Danbooru has an extensive tag system with millions of tags. Common tags include:
+- **Character counts**: `1girl`, `1boy`, `solo`, `multiple_girls`, `multiple_boys`
+- **Hair**: `long_hair`, `short_hair`, `blonde_hair`, `blue_hair`, `brown_hair`, `pink_hair`, `white_hair`, `black_hair`
+- **Eyes**: `blue_eyes`, `red_eyes`, `green_eyes`, `purple_eyes`, `brown_eyes`
+- **Features**: `blush`, `smile`, `open_mouth`, `looking_at_viewer`, `bangs`
+- **Content**: `breasts`, `thighhighs`, `swimsuit`, `school_uniform`, `maid`
+
+**Note:** Combine tags with spaces: `--tags "1girl solo long_hair"`
+
 ## 🛠️ Development
 
 ```bash
@@ -250,13 +284,16 @@ random-waifu-discord/
 │   │   ├── waifu-pics-client.ts  # waifu.pics API integration
 │   │   ├── picre-client.ts       # pic.re API integration
 │   │   ├── nekos-best-client.ts  # nekos.best API integration
+│   │   ├── danbooru-client.ts    # danbooru API integration
 │   │   └── discord-webhook.ts    # Discord webhook sender
+│   ├── types/
 │   ├── types/
 │   │   ├── waifu.ts              # waifu.im types
 │   │   ├── nekos.ts              # nekosapi.com types
 │   │   ├── waifupics.ts          # waifu.pics types
 │   │   ├── picre.ts              # pic.re types
 │   │   ├── nekosbest.ts          # nekos.best types
+│   │   ├── danbooru.ts           # danbooru types
 │   │   └── source.ts             # Unified source interface
 │   ├── utils/
 │   │   └── config.ts             # Environment config & tags
@@ -289,6 +326,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🔄 Changelog
 
 ### Recent Updates
+- **Added**: Danbooru support with 6M+ images and extensive tagging
 - **Added**: nekos.best support with 60+ GIF reaction categories
 - **Added**: Source-specific webhook profiles (usernames and avatars)
 - **Fixed**: NekosAPI tag filtering now works correctly
