@@ -32,16 +32,31 @@ export class NekosClient implements WaifuSource {
    * Convert NekosAPI image to unified SourceImage format
    */
   private normalizeImage(image: NekosImage): SourceImage {
+    // Build artist info from available fields
+    const artists = [];
+    if (image.artist?.name) {
+      artists.push({ name: image.artist.name, url: image.artist.url });
+    } else if (image.artist_name) {
+      artists.push({ name: image.artist_name, url: null });
+    }
+
+    // Convert dominant color from RGB array to hex string
+    let dominantColor: string | undefined;
+    if (image.color_dominant && image.color_dominant.length >= 3) {
+      const [r, g, b] = image.color_dominant;
+      dominantColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+
     return {
       id: image.id,
       url: image.url,
       width: image.width,
       height: image.height,
-      source: image.source,
-      artists: image.artist ? [{ name: image.artist.name, url: image.artist.url }] : [],
-      tags: image.tags?.map(tag => ({ name: tag.name })) || [],
+      source: image.source || image.source_url,
+      artists,
+      tags: image.tags?.map(tag => ({ name: tag })) || [],
       isNsfw: image.nsfw || image.rating === 'explicit' || image.rating === 'borderline',
-      dominantColor: undefined, // NekosAPI doesn't provide dominant color
+      dominantColor,
     };
   }
 

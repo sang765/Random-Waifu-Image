@@ -11,6 +11,7 @@ import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
 import { picreClient } from './clients/picre-client';
+import { nekosBestClient } from './clients/nekos-best-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
 import { WaifuSource, SourceType, SourceImage } from './types/source';
 
@@ -20,17 +21,19 @@ import { WaifuSource, SourceType, SourceImage } from './types/source';
  */
 function getImageSource(sourceType: SourceType): WaifuSource {
   if (sourceType === 'both' || sourceType === 'random') {
-    // Randomly select one of the four sources
+    // Randomly select one of the five sources
     const random = Math.random();
-    if (random < 0.25) return waifuClient;
-    if (random < 0.50) return nekosClient;
-    if (random < 0.75) return waifuPicsClient;
-    return picreClient;
+    if (random < 0.20) return waifuClient;
+    if (random < 0.40) return nekosClient;
+    if (random < 0.60) return waifuPicsClient;
+    if (random < 0.80) return picreClient;
+    return nekosBestClient;
   }
-  
+
   if (sourceType === 'nekosapi') return nekosClient;
   if (sourceType === 'waifu.pics') return waifuPicsClient;
   if (sourceType === 'pic.re') return picreClient;
+  if (sourceType === 'nekos.best') return nekosBestClient;
   return waifuClient;
 }
 
@@ -38,7 +41,7 @@ function getImageSource(sourceType: SourceType): WaifuSource {
  * Get a fallback source (randomly select from all sources except the failed one)
  */
 function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
-  const sources = [waifuClient, nekosClient, waifuPicsClient, picreClient].filter(
+  const sources = [waifuClient, nekosClient, waifuPicsClient, picreClient, nekosBestClient].filter(
     s => s.name !== excludeSource.name
   );
   const randomIndex = Math.floor(Math.random() * sources.length);

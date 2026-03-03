@@ -31,11 +31,14 @@ export interface NekosImage {
   width: number;
   height: number;
   source: string | null;
+  source_url: string | null;
   created_at: string;
   updated_at: string;
   artist: NekosArtist | null;
+  artist_name: string | null;
   characters: NekosCharacter[];
-  tags: NekosTag[];
+  tags: string[];
+  color_dominant: number[] | null;
 }
 
 export interface NekosApiResponse {

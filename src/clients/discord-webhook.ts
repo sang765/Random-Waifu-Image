@@ -82,7 +82,9 @@ export class DiscordWebhookClient {
         url: image.url,
       },
       footer: {
-        text: `ID: ${image.id} | Resolution: ${image.width ?? '?'}x${image.height ?? '?'}`,
+        text: image.width && image.height
+          ? `ID: ${image.id} | Resolution: ${image.width}x${image.height}`
+          : `ID: ${image.id}`,
       },
       timestamp: new Date().toISOString(),
     };
@@ -134,6 +136,8 @@ export class DiscordWebhookClient {
     let avatarUrl: string | undefined;
     if (sourceName === 'Nekos API') {
       avatarUrl = 'https://nekosapi.com/branding/logo/logo.png';
+    } else if (sourceName === 'nekos.best') {
+      avatarUrl = 'https://nekos.best/favicon.png';
     } else if (sourceName === 'waifu.pics') {
       avatarUrl = 'https://waifu.pics/favicon.png';
     } else if (sourceName === 'pic.re') {

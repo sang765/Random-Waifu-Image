@@ -11,6 +11,7 @@
  *   npm start -- --source nekosapi         # Use NekosAPI source
  *   npm start -- --source waifu.pics       # Use waifu.pics source
  *   npm start -- --source pic.re           # Use pic.re source
+ *   npm start -- --source nekos.best       # Use nekos.best source
  *   npm start -- --source both             # Randomly select from all sources
  */
 
@@ -20,6 +21,7 @@ import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
 import { picreClient } from './clients/picre-client';
+import { nekosBestClient } from './clients/nekos-best-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
 import { SourceImage, SourceType, WaifuSource } from './types/source';
 
@@ -36,13 +38,13 @@ const program = new Command();
 
 program
   .name('random-waifu-discord')
-  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, or pic.re to Discord')
+  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, pic.re, or nekos.best to Discord')
   .version('1.0.0')
   .option('--sfw', 'post SFW image (overrides env config)', false)
   .option('--nsfw', 'post NSFW image (overrides env config)', false)
   .option('-t, --tags <tags>', 'comma-separated tags to filter by', '')
   .option('-r, --random-tags [count]', 'use random tags (default: 1 if no number specified)')
-  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, both, or random', config.imageSource)
+  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, both, or random', config.imageSource)
   .option('--dry-run', 'fetch image but don\'t post to Discord', false)
   .parse();
 
@@ -53,19 +55,21 @@ const options: CliOptions = program.opts();
  */
 function getImageSource(): WaifuSource {
   const source = options.source || config.imageSource;
-  
+
   if (source === 'both' || source === 'random') {
-    // Randomly select one of the four sources
+    // Randomly select one of the five sources
     const random = Math.random();
-    if (random < 0.25) return waifuClient;
-    if (random < 0.50) return nekosClient;
-    if (random < 0.75) return waifuPicsClient;
-    return picreClient;
+    if (random < 0.20) return waifuClient;
+    if (random < 0.40) return nekosClient;
+    if (random < 0.60) return waifuPicsClient;
+    if (random < 0.80) return picreClient;
+    return nekosBestClient;
   }
-  
+
   if (source === 'nekosapi') return nekosClient;
   if (source === 'waifu.pics') return waifuPicsClient;
   if (source === 'pic.re') return picreClient;
+  if (source === 'nekos.best') return nekosBestClient;
   return waifuClient;
 }
 
@@ -73,7 +77,7 @@ function getImageSource(): WaifuSource {
  * Get a fallback source (randomly select from all sources except the failed one)
  */
 function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
-  const sources = [waifuClient, nekosClient, waifuPicsClient, picreClient].filter(
+  const sources = [waifuClient, nekosClient, waifuPicsClient, picreClient, nekosBestClient].filter(
     s => s.name !== excludeSource.name
   );
   const randomIndex = Math.floor(Math.random() * sources.length);

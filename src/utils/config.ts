@@ -84,9 +84,20 @@ export const NEKOS_SFW_TAGS = [
 ];
 
 export const NEKOS_NSFW_TAGS = [
-  'nsfw',
-  'hentai',
-  'lewd',
+  // NekosAPI uses rating=explicit for NSFW filtering, not tags
+  // These are actual content tags that may appear in NSFW images
+  'exposed_girl_breasts',
+  'large_breasts',
+  'medium_breasts',
+  'girl',
+  'pink_hair',
+  'white_hair',
+  'red_hair',
+  'brown_hair',
+  'blonde_hair',
+  'blue_hair',
+  'long_hair',
+  'short_hair',
 ];
 
 // waifu.pics-specific tags (categories)
@@ -138,6 +149,81 @@ export const PICRE_SFW_TAGS = PICRE_TAGS;
 
 export const PICRE_NSFW_TAGS: string[] = []; // Pic.re is SFW-only by design
 
+// nekos.best-specific tags (categories)
+// https://docs.nekos.best/
+// nekos.best provides both static images (PNG) and GIFs
+// Image categories: neko, waifu, husbando, kitsune
+// GIF categories: lurk, shoot, sleep, clap, shrug, stare, wave, poke, confused, smile, etc.
+export const NEKOS_BEST_SFW_TAGS = [
+  // Image categories
+  'neko',
+  'waifu',
+  'husbando',
+  'kitsune',
+  // GIF categories - reactions/emotes
+  'hug',
+  'kiss',
+  'cuddle',
+  'pat',
+  'poke',
+  'tickle',
+  'slap',
+  'bonk',
+  'wave',
+  'wink',
+  'smile',
+  'blush',
+  'cry',
+  'happy',
+  'sleep',
+  'dance',
+  'kick',
+  'punch',
+  'shoot',
+  'stare',
+  'think',
+  'confused',
+  'angry',
+  'baka',
+  'bite',
+  'blowkiss',
+  'clap',
+  'facepalm',
+  'feed',
+  'handhold',
+  'handshake',
+  'highfive',
+  'laugh',
+  'lurk',
+  'nod',
+  'nom',
+  'nope',
+  'peck',
+  'pout',
+  'run',
+  'salute',
+  'shrug',
+  'sip',
+  'smug',
+  'spin',
+  'tableflip',
+  'teehee',
+  'thumbsup',
+  'wag',
+  'yawn',
+  'yeet',
+  'shocked',
+  'bleh',
+  'bored',
+  'nya',
+  'lappillow',
+  'carry',
+  'kabedon',
+  'shake',
+];
+
+export const NEKOS_BEST_NSFW_TAGS: string[] = []; // nekos.best is SFW-only by design
+
 /**
  * Get tags appropriate for the selected source
  */
@@ -150,6 +236,9 @@ export function getTagsForSource(source: SourceType, type: 'sfw' | 'nsfw'): stri
     case 'pic.re':
       // Pic.re is SFW-only, return empty array for NSFW
       return type === 'sfw' ? PICRE_SFW_TAGS : PICRE_NSFW_TAGS;
+    case 'nekos.best':
+      // nekos.best is SFW-only, return empty array for NSFW
+      return type === 'sfw' ? NEKOS_BEST_SFW_TAGS : NEKOS_BEST_NSFW_TAGS;
     case 'waifu.im':
     case 'both':
     case 'random':
