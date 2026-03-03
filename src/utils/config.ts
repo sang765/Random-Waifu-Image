@@ -6,6 +6,8 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { SourceType } from '../types/source';
 import { PICRE_TAGS } from '../types/picre';
+import { DANBOORU_SFW_TAGS, DANBOORU_NSFW_TAGS } from '../types/danbooru';
+import { DanbooruCredentials } from '../clients/danbooru-client';
 
 // Load .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
@@ -239,6 +241,8 @@ export function getTagsForSource(source: SourceType, type: 'sfw' | 'nsfw'): stri
     case 'nekos.best':
       // nekos.best is SFW-only, return empty array for NSFW
       return type === 'sfw' ? NEKOS_BEST_SFW_TAGS : NEKOS_BEST_NSFW_TAGS;
+    case 'danbooru':
+      return type === 'sfw' ? DANBOORU_SFW_TAGS : DANBOORU_NSFW_TAGS;
     case 'waifu.im':
     case 'both':
     case 'random':
@@ -288,8 +292,23 @@ function getNumberEnvVar(key: string, defaultValue: number): number {
 function getSourceTypeEnvVar(key: string, defaultValue: SourceType): SourceType {
   const value = process.env[key];
   if (!value) return defaultValue;
-  const validSources: SourceType[] = ['waifu.im', 'nekosapi', 'waifu.pics', 'pic.re', 'both', 'random'];
+  const validSources: SourceType[] = ['waifu.im', 'nekosapi', 'waifu.pics', 'pic.re', 'nekos.best', 'danbooru', 'both', 'random'];
   return validSources.includes(value as SourceType) ? (value as SourceType) : defaultValue;
+}
+
+/**
+ * Load Danbooru API credentials from environment variables
+ * Returns undefined if credentials are not configured
+ */
+export function loadDanbooruCredentials(): DanbooruCredentials | undefined {
+  const username = process.env['DANBOORU_USERNAME'] || process.env['DANBOORU_LOGIN'];
+  const apiKey = process.env['DANBOORU_API_KEY'];
+
+  if (username && apiKey) {
+    return { username, apiKey };
+  }
+
+  return undefined;
 }
 
 export function loadConfig(): AppConfig {

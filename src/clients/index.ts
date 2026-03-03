@@ -8,3 +8,10 @@ export { waifuPicsClient, WaifuPicsClient } from './waifu-pics-client';
 export { picreClient, PicreClient } from './picre-client';
 export { nekosBestClient, NekosBestClient } from './nekos-best-client';
 export { DiscordWebhookClient } from './discord-webhook';
+export {
+  DanbooruClient,
+  initializeDanbooruClient,
+  getDanbooruClient,
+  danbooruClient,
+  type DanbooruCredentials,
+} from './danbooru-client';

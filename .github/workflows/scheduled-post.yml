@@ -1,4 +1,4 @@
-name: Random Post
+name: Random Image Post
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      - name: Check vaid webhook URLs
+      - name: Check valid webhook URLs
         env:
           SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
           NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
@@ -42,6 +42,9 @@ jobs:
         env:
           SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
           NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
+          # If you use Danbooru
+          DANBOORU_USERNAME: ${{ secrets.DANBOORU_USERNAME }}
+          DANBOORU_API_KEY: ${{ secrets.DANBOORU_API_KEY }}
         run: |
             npm start -- --sfw --random-tags --source random
             npm start -- --nsfw --random-tags --source random

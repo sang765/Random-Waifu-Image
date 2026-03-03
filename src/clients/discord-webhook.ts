@@ -56,6 +56,8 @@ function getSourceEmoji(sourceName: string): string {
       return '💜';
     case 'pic.re':
       return '🖼️';
+    case 'danbooru':
+      return '🔴';
     default:
       return '🎴';
   }
@@ -277,8 +279,10 @@ export class DiscordWebhookClient {
       });
     }
 
-    // Determine avatar URL based on source
+    // Determine avatar URL and display name based on source
     let avatarUrl: string | undefined;
+    let displayName: string = sourceName;
+
     if (sourceName === 'Nekos API') {
       avatarUrl = 'https://nekosapi.com/branding/logo/logo.png';
     } else if (sourceName === 'nekos.best') {
@@ -288,12 +292,15 @@ export class DiscordWebhookClient {
     } else if (sourceName === 'pic.re') {
       // Pic.re has no official icon/logo - leave avatar empty as requested
       avatarUrl = undefined;
+    } else if (sourceName === 'danbooru') {
+      avatarUrl = 'https://danbooru.donmai.us/packs/static/danbooru-logo-128x128-ea111b6658173e847734.png';
+      displayName = 'Danbooru';
     } else {
       avatarUrl = 'https://www.waifu.im/favicon.png';
     }
 
     const payload: DiscordWebhookPayload = {
-      username: sourceName,
+      username: displayName,
       avatar_url: avatarUrl,
       embeds: [embed],
     };
