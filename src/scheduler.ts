@@ -6,7 +6,7 @@
  */
 
 import cron from 'node-cron';
-import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials, loadR34DisableAiPost } from './utils/config';
+import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials, loadR34DisableAiPost, loadTBIBDisableAiPost } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
@@ -14,6 +14,7 @@ import { picreClient } from './clients/picre-client';
 import { nekosBestClient } from './clients/nekos-best-client';
 import { initializeDanbooruClient, danbooruClient } from './clients/danbooru-client';
 import { initializeRule34Client, rule34Client } from './clients/rule34-client';
+import { initializeTBIBClient, tbibClient } from './clients/tbib-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
 import { WaifuSource, SourceType, SourceImage } from './types/source';
 
@@ -35,6 +36,14 @@ if (rule34Credentials) {
   }
 }
 
+// Initialize TBIB client (no credentials required)
+const tbibDisableAiPost = loadTBIBDisableAiPost();
+initializeTBIBClient({ disableAiPosts: tbibDisableAiPost });
+console.log('📚 TBIB client initialized');
+if (tbibDisableAiPost) {
+  console.log('🤖 TBIB AI filtering enabled (AI-generated images will be skipped)');
+}
+
 /**
  * Get the image source based on configuration
  * If 'both' or 'random' is set, randomly select one from all available sources
@@ -50,6 +59,10 @@ function getImageSource(sourceType: SourceType): WaifuSource {
     // Add Rule 34 if initialized with credentials
     if (rule34Client) {
       sources.push(rule34Client);
+    }
+    // Add TBIB (always initialized, no credentials required)
+    if (tbibClient) {
+      sources.push(tbibClient);
     }
     const randomIndex = Math.floor(Math.random() * sources.length);
     return sources[randomIndex];
@@ -71,6 +84,12 @@ function getImageSource(sourceType: SourceType): WaifuSource {
     }
     return rule34Client;
   }
+  if (sourceType === 'tbib') {
+    if (!tbibClient) {
+      throw new Error('TBIB client not initialized');
+    }
+    return tbibClient;
+  }
   return waifuClient;
 }
 
@@ -86,6 +105,10 @@ function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
   // Add Rule 34 to fallback if initialized
   if (rule34Client) {
     sources.push(rule34Client);
+  }
+  // Add TBIB to fallback (always initialized)
+  if (tbibClient) {
+    sources.push(tbibClient);
   }
   const filteredSources = sources.filter(s => s.name !== excludeSource.name);
   const randomIndex = Math.floor(Math.random() * filteredSources.length);

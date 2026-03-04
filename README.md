@@ -1,6 +1,6 @@
 # 🌸 Random Waifu Discord
 
-Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best), [danbooru](https://danbooru.donmai.us), [rule34](https://rule34.xxx)) to Discord channels via webhooks.
+Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best), [danbooru](https://danbooru.donmai.us), [rule34](https://rule34.xxx), [tbib](https://tbib.org)) to Discord channels via webhooks.
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@ Send random anime images from multiple sources ([waifu.im](https://waifu.im), [n
 
 ## ✨ Features
 
-- 🖼️ **7 Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, and rule34
+- 🖼️ **8 Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, rule34, and tbib
 - 🔒 **SFW/NSFW Support** - Separate webhooks for SFW and NSFW content
 - 🏷️ **Tag Filtering** - Filter images by specific tags (varies by source)
 - ⏰ **Scheduling** - Automated posting via cron jobs or GitHub Actions
@@ -86,6 +86,10 @@ npm start -- --source danbooru --tags "1girl,smile"
 # Use rule34 with tags (NSFW only)
 npm start -- --source rule34 --nsfw --tags "1girl,solo"
 
+# Use tbib with tags
+npm start -- --source tbib --tags "1girl,solo"
+npm start -- --source tbib --nsfw --tags "1girl,solo rating:explicit"
+
 # Random source selection
 npm start -- --source random
 
@@ -111,12 +115,13 @@ npm run schedule
 |----------|-------------|---------|
 | `SFW_WEBHOOK_URL` | Discord webhook URL for SFW channel | (required) |
 | `NSFW_WEBHOOK_URL` | Discord webhook URL for NSFW channel | (required) |
-| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, danbooru, rule34, both, random | `random` |
+| `IMAGE_SOURCE` | Image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, danbooru, rule34, tbib, both, random | `random` |
 | `DANBOORU_USERNAME` | Danbooru username (optional, required for danbooru source) | (empty) |
 | `DANBOORU_API_KEY` | Danbooru API key (optional, required for danbooru source) | (empty) |
 | `RULE34_USER_ID` | Rule 34 user ID (optional, required for rule34 source) | (empty) |
 | `RULE34_API_KEY` | Rule 34 API key (optional, required for rule34 source) | (empty) |
 | `R34_DISABLE_AI_POST` | Disable AI-generated images from Rule 34 | `true` |
+| `TBIB_DISABLE_AI_POST` | Disable AI-generated images from TBIB | `true` |
 | `DEFAULT_TAGS` | Comma-separated tags to filter by | (empty) |
 | `CRON_SCHEDULE` | Cron expression for scheduling | `0 */6 * * *` |
 | `POST_SFW` | Enable SFW posting | `true` |
@@ -185,9 +190,10 @@ The bot supports multiple anime image APIs. Choose your source via the `IMAGE_SO
 | `nekos.best` | [nekos.best](https://nekos.best) | GIF reactions, image categories | ❌ No | Images & GIFs |
 | `danbooru` | [danbooru.donmai.us](https://danbooru.donmai.us) | 6M+ images, extensive tagging | ✅ Yes | Static images |
 | `rule34` | [rule34.xxx](https://rule34.xxx) | 5M+ images, tag-based search | ✅ Yes | Static images |
+| `tbib` | [tbib.org](https://tbib.org) | 20M+ images, no auth required | ✅ Yes | Static images |
 | `both` / `random` | - | Randomly selects from all sources | ✅ Yes* | Mixed |
 
-*Pic.re, nekos.best are always SFW. Rule34 is always NSFW (no SFW content).
+*Pic.re, nekos.best are always SFW. Rule34 is always NSFW (no SFW content). TBIB supports both SFW and NSFW.
 
 ### Source Selection Examples
 
@@ -196,6 +202,7 @@ The bot supports multiple anime image APIs. Choose your source via the `IMAGE_SO
 npm start -- --source pic.re
 npm start -- --source nekos.best
 npm start -- --source danbooru
+npm start -- --source tbib
 
 # Use random source selection
 npm start -- --source random
@@ -240,6 +247,37 @@ By default, AI-generated images are filtered out from Rule 34 results. To allow 
 ```env
 R34_DISABLE_AI_POST=false
 ```
+
+### TBIB Setup
+
+To use TBIB (The Big ImageBoard) as an image source:
+
+1. No authentication required! Just set your image source:
+   ```env
+   IMAGE_SOURCE=tbib
+   ```
+
+2. TBIB supports both SFW and NSFW content with ratings:
+   - `rating:safe` - SFW content only
+   - `rating:questionable` - Borderline/mild NSFW
+   - `rating:explicit` - NSFW content
+
+**Example usage:**
+```bash
+# Get SFW images
+npm start -- --source tbib --tags "1girl rating:safe"
+
+# Get NSFW images
+npm start -- --source tbib --nsfw --tags "1girl rating:explicit"
+```
+
+**AI Content Filtering:**
+By default, AI-generated images are filtered out from TBIB results. To allow AI-generated images, set:
+```env
+TBIB_DISABLE_AI_POST=false
+```
+
+**Note:** TBIB has a Danbooru-like API and supports the same tag system. Use spaces to separate multiple tags.
 
 ## 🏷️ Available Tags
 
@@ -299,6 +337,17 @@ Rule 34 uses a similar tagging system to Danbooru. Common tags include:
 
 **Note:** Rule 34 supports the full tag system. Combine tags with spaces: `--tags "1girl solo blue_hair"`
 
+### TBIB Tags
+TBIB uses a similar tagging system to Danbooru and Rule 34. Common tags include:
+- **Character counts**: `1girl`, `1boy`, `solo`, `duo`, `group`, `multiple_girls`
+- **Hair**: `long_hair`, `short_hair`, `blonde_hair`, `blue_hair`, `brown_hair`, `black_hair`, `pink_hair`, `white_hair`
+- **Eyes**: `blue_eyes`, `red_eyes`, `green_eyes`, `brown_eyes`, `purple_eyes`
+- **Features**: `blush`, `smile`, `open_mouth`, `looking_at_viewer`, `bangs`, `large_breasts`, `small_breasts`
+- **Content**: `nude`, `swimsuit`, `lingerie`, `uniform`, `stockings`, `thighhighs`
+- **Ratings**: `rating:safe`, `rating:questionable`, `rating:explicit`
+
+**Note:** TBIB supports the full tag system with rating filters. Combine tags with spaces: `--tags "1girl solo rating:safe"`
+
 ## 🛠️ Development
 
 ```bash
@@ -329,6 +378,7 @@ Random-Waifu-Image/
 │   │   ├── nekos-best-client.ts  # nekos.best API integration
 │   │   ├── danbooru-client.ts    # danbooru API integration
 │   │   ├── rule34-client.ts      # rule34 API integration
+│   │   ├── tbib-client.ts        # tbib API integration
 │   │   └── discord-webhook.ts    # Discord webhook sender
 │   ├── types/
 │   │   ├── waifu.ts              # waifu.im types
@@ -338,6 +388,7 @@ Random-Waifu-Image/
 │   │   ├── nekosbest.ts          # nekos.best types
 │   │   ├── danbooru.ts           # danbooru types
 │   │   ├── rule34.ts             # rule34 types
+│   │   ├── tbib.ts               # tbib types
 │   │   └── source.ts             # Unified source interface
 │   ├── utils/
 │   │   ├── config.ts             # Environment config & tags
@@ -371,6 +422,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🔄 Changelog
 
 ### Recent Updates
+- **Added**: TBIB (The Big ImageBoard) support with 20M+ images, no auth required
 - **Added**: Rule 34 support with 5M+ images and tag-based search
 - **Added**: Image accent color extraction for Discord embeds (like waifu.im)
 - **Added**: Danbooru support with 6M+ images and extensive tagging

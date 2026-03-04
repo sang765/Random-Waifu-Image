@@ -14,11 +14,12 @@
  *   npm start -- --source nekos.best       # Use nekos.best source
  *   npm start -- --source danbooru         # Use Danbooru source
  *   npm start -- --source rule34           # Use Rule 34 source
+ *   npm start -- --source tbib             # Use TBIB source
  *   npm start -- --source both             # Randomly select from all sources
  */
 
 import { Command } from 'commander';
-import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials, loadR34DisableAiPost } from './utils/config';
+import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials, loadR34DisableAiPost, loadTBIBDisableAiPost } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
@@ -26,6 +27,7 @@ import { picreClient } from './clients/picre-client';
 import { nekosBestClient } from './clients/nekos-best-client';
 import { initializeDanbooruClient, danbooruClient, DanbooruClient } from './clients/danbooru-client';
 import { initializeRule34Client, rule34Client, Rule34Client } from './clients/rule34-client';
+import { initializeTBIBClient, tbibClient, TBIBClient } from './clients/tbib-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
 import { SourceImage, SourceType, WaifuSource } from './types/source';
 
@@ -47,6 +49,14 @@ if (rule34Credentials) {
   }
 }
 
+// Initialize TBIB client (no credentials required)
+const tbibDisableAiPost = loadTBIBDisableAiPost();
+initializeTBIBClient({ disableAiPosts: tbibDisableAiPost });
+console.log('📚 TBIB client initialized');
+if (tbibDisableAiPost) {
+  console.log('🤖 TBIB AI filtering enabled (AI-generated images will be skipped)');
+}
+
 interface CliOptions {
   sfw?: boolean;
   nsfw?: boolean;
@@ -60,13 +70,13 @@ const program = new Command();
 
 program
   .name('random-waifu-discord')
-  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, or rule34 to Discord')
+  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, rule34, or tbib to Discord')
   .version('1.0.0')
   .option('--sfw', 'post SFW image (overrides env config)', false)
   .option('--nsfw', 'post NSFW image (overrides env config)', false)
   .option('-t, --tags <tags>', 'comma-separated tags to filter by', '')
   .option('-r, --random-tags [count]', 'use random tags (default: 1 if no number specified)')
-  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, danbooru, rule34, both, or random', config.imageSource)
+  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, danbooru, rule34, tbib, both, or random', config.imageSource)
   .option('--dry-run', 'fetch image but don\'t post to Discord', false)
   .parse();
 
@@ -89,6 +99,10 @@ function getImageSource(): WaifuSource {
     if (rule34Client) {
       sources.push(rule34Client);
     }
+    // Add TBIB (always initialized, no credentials required)
+    if (tbibClient) {
+      sources.push(tbibClient);
+    }
     const randomIndex = Math.floor(Math.random() * sources.length);
     return sources[randomIndex];
   }
@@ -109,6 +123,12 @@ function getImageSource(): WaifuSource {
     }
     return rule34Client;
   }
+  if (source === 'tbib') {
+    if (!tbibClient) {
+      throw new Error('TBIB client not initialized');
+    }
+    return tbibClient;
+  }
   return waifuClient;
 }
 
@@ -124,6 +144,10 @@ function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
   // Add Rule 34 to fallback if initialized
   if (rule34Client) {
     sources.push(rule34Client);
+  }
+  // Add TBIB to fallback (always initialized)
+  if (tbibClient) {
+    sources.push(tbibClient);
   }
   const filteredSources = sources.filter(s => s.name !== excludeSource.name);
   const randomIndex = Math.floor(Math.random() * filteredSources.length);

@@ -61,6 +61,8 @@ function getSourceEmoji(sourceName: string): string {
       return '🔴';
     case 'rule34':
       return '📋';
+    case 'tbib':
+      return '📚';
     default:
       return '🎴';
   }
@@ -379,6 +381,10 @@ export class DiscordWebhookClient {
     } else if (sourceName === 'rule34') {
       avatarUrl = 'https://ssd-cdn.nest.rip/uploads/fb0860f1-6358-4460-866b-e854d08ffda4.jpg';
       displayName = 'Rule 34';
+    } else if (sourceName === 'tbib') {
+      // TBIB has no official icon/logo - leave avatar empty as requested
+      avatarUrl = undefined;
+      displayName = 'TBIB';
     } else {
       avatarUrl = 'https://www.waifu.im/favicon.png';
     }
