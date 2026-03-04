@@ -272,7 +272,7 @@ npm run lint
 ## 📁 Project Structure
 
 ```
-random-waifu-discord/
+Random-Waifu-Image/
 ├── .github/
 │   └── workflows/
 │       ├── scheduled-post.yml    # Automated posting workflow
@@ -286,7 +286,6 @@ random-waifu-discord/
 │   │   ├── nekos-best-client.ts  # nekos.best API integration
 │   │   ├── danbooru-client.ts    # danbooru API integration
 │   │   └── discord-webhook.ts    # Discord webhook sender
-│   ├── types/
 │   ├── types/
 │   │   ├── waifu.ts              # waifu.im types
 │   │   ├── nekos.ts              # nekosapi.com types
