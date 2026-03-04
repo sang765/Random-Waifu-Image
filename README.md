@@ -116,6 +116,7 @@ npm run schedule
 | `DANBOORU_API_KEY` | Danbooru API key (optional, required for danbooru source) | (empty) |
 | `RULE34_USER_ID` | Rule 34 user ID (optional, required for rule34 source) | (empty) |
 | `RULE34_API_KEY` | Rule 34 API key (optional, required for rule34 source) | (empty) |
+| `R34_DISABLE_AI_POST` | Disable AI-generated images from Rule 34 | `true` |
 | `DEFAULT_TAGS` | Comma-separated tags to filter by | (empty) |
 | `CRON_SCHEDULE` | Cron expression for scheduling | `0 */6 * * *` |
 | `POST_SFW` | Enable SFW posting | `true` |
@@ -225,14 +226,20 @@ To use Rule 34 as an image source, you need to obtain API credentials:
 2. Go to **My Account > Options** ([direct link](https://rule34.xxx/index.php?page=account&s=options))
 3. Copy your **User ID** and **API Key**
 4. Add your credentials to `.env`:
-   ```env
-   RULE34_USER_ID=your_user_id
-   RULE34_API_KEY=your_api_key
-   ```
+    ```env
+    RULE34_USER_ID=your_user_id
+    RULE34_API_KEY=your_api_key
+    ```
 
 **Note:** Rule 34 is an NSFW-only source. When using this source:
 - SFW requests will return null and fall back to other sources
 - Always use with `--nsfw` flag or set `POST_NSFW=true` in `.env`
+
+**AI Content Filtering:**
+By default, AI-generated images are filtered out from Rule 34 results. To allow AI-generated images, set:
+```env
+R34_DISABLE_AI_POST=false
+```
 
 ## 🏷️ Available Tags
 
