@@ -15,3 +15,15 @@ export {
   danbooruClient,
   type DanbooruCredentials,
 } from './danbooru-client';
+
+// Export blacklist utility for external use
+export {
+  loadBlacklist,
+  clearBlacklistCache,
+  getBlacklistedTags,
+  getBlacklistedTagsByKey,
+  shouldFilterImage,
+  filterImagesByTags,
+  getSupportedSources,
+  supportsTagBlacklisting,
+} from '../utils/blacklist';

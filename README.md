@@ -29,7 +29,7 @@ Send random anime images from multiple sources ([waifu.im](https://waifu.im), [n
 ```bash
 # Clone the repository
 git clone https://github.com/sang765/Random-Waifu-Image.git
-cd random-waifu-discord
+cd Random-Waifu-Image
 
 # Install dependencies
 npm install

@@ -8,6 +8,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { SourceImage, WaifuSource } from '../types/source';
 import { PicreImage, PicreFetchOptions } from '../types/picre';
+import { getBlacklistedTagsByKey, shouldFilterImage } from '../utils/blacklist';
 
 export class PicreClient implements WaifuSource {
   private readonly client: AxiosInstance;
@@ -51,9 +52,17 @@ export class PicreClient implements WaifuSource {
   }
 
   /**
+   * Get blacklisted tags for Pic.re
+   */
+  private getBlacklistedTags(): string[] {
+    return getBlacklistedTagsByKey('picre');
+  }
+
+  /**
    * Fetch random image metadata from Pic.re API
    * Uses POST /image endpoint (returns JSON metadata)
    * Note: GET /images.json returns 405, POST /image is the working endpoint
+   * Automatically excludes blacklisted tags
    */
   async fetchImageMeta(options: PicreFetchOptions = {}): Promise<PicreImage | null> {
     // Build query parameters for the POST request
@@ -64,9 +73,16 @@ export class PicreClient implements WaifuSource {
       params.append('in', options.includedTags.join(','));
     }
 
-    // Add excluded tags
-    if (options.excludedTags && options.excludedTags.length > 0) {
-      params.append('nin', options.excludedTags.join(','));
+    // Add excluded tags (user-provided + blacklisted)
+    const blacklistedTags = this.getBlacklistedTags();
+    const excludedTags = [...(options.excludedTags || [])];
+    for (const tag of blacklistedTags) {
+      if (!excludedTags.includes(tag)) {
+        excludedTags.push(tag);
+      }
+    }
+    if (excludedTags.length > 0) {
+      params.append('nin', excludedTags.join(','));
     }
 
     // Add specific image ID
@@ -125,7 +141,19 @@ export class PicreClient implements WaifuSource {
         return null;
       }
 
-      return this.normalizeImage(meta);
+      const image = this.normalizeImage(meta);
+
+      // Filter out images with blacklisted tags as a safety measure
+      const blacklistedTags = this.getBlacklistedTags();
+      if (blacklistedTags.length > 0 && image.tags && image.tags.length > 0) {
+        const tagNames = image.tags.map(tag => tag.name);
+        if (shouldFilterImage(tagNames, blacklistedTags)) {
+          console.log(`⚠️  Pic.re image filtered due to blacklisted tags: ${tagNames.filter(tag => blacklistedTags.includes(tag.toLowerCase())).join(', ')}`);
+          return null;
+        }
+      }
+
+      return image;
     } catch (error) {
       console.error('Error fetching SFW image from Pic.re:', error);
       return null;

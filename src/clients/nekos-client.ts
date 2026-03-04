@@ -11,6 +11,7 @@ import {
   NekosRating,
 } from '../types/nekos';
 import { SourceImage, WaifuSource } from '../types/source';
+import { getBlacklistedTagsByKey, shouldFilterImage } from '../utils/blacklist';
 
 export class NekosClient implements WaifuSource {
   private readonly client: AxiosInstance;
@@ -68,7 +69,15 @@ export class NekosClient implements WaifuSource {
   }
 
   /**
+   * Get blacklisted tags for NekosAPI
+   */
+  private getBlacklistedTags(): string[] {
+    return getBlacklistedTagsByKey('nekosapi');
+  }
+
+  /**
    * Fetch random images from NekosAPI
+   * Automatically excludes blacklisted tags
    */
   async fetchImages(options: NekosFetchOptions = {}): Promise<SourceImage[]> {
     const params = new URLSearchParams();
@@ -88,9 +97,16 @@ export class NekosClient implements WaifuSource {
       params.append('tags', options.tags.join(','));
     }
 
-    // Add excluded tags
-    if (options.without_tags && options.without_tags.length > 0) {
-      params.append('without_tags', options.without_tags.join(','));
+    // Add excluded tags (user-provided + blacklisted)
+    const blacklistedTags = this.getBlacklistedTags();
+    const excludedTags = [...(options.without_tags || [])];
+    for (const tag of blacklistedTags) {
+      if (!excludedTags.includes(tag)) {
+        excludedTags.push(tag);
+      }
+    }
+    if (excludedTags.length > 0) {
+      params.append('without_tags', excludedTags.join(','));
     }
 
     // Add limit
@@ -115,7 +131,17 @@ export class NekosClient implements WaifuSource {
       } else {
         return [];
       }
-      return images.map(img => this.normalizeImage(img));
+
+      // Normalize and filter out images with blacklisted tags as a safety measure
+      const normalizedImages = images.map(img => this.normalizeImage(img));
+      if (blacklistedTags.length > 0) {
+        return normalizedImages.filter(image => {
+          const tagNames = image.tags?.map(tag => tag.name) || [];
+          return !shouldFilterImage(tagNames, blacklistedTags);
+        });
+      }
+
+      return normalizedImages;
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axiosError.response) {

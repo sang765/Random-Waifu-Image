@@ -11,6 +11,7 @@ import {
   NsfwFilter,
 } from '../types/waifu';
 import { SourceImage, WaifuSource } from '../types/source';
+import { getBlacklistedTagsByKey, shouldFilterImage } from '../utils/blacklist';
 
 export class WaifuClient implements WaifuSource {
   private readonly client: AxiosInstance;
@@ -53,7 +54,15 @@ export class WaifuClient implements WaifuSource {
   }
 
   /**
+   * Get blacklisted tags for waifu.im
+   */
+  private getBlacklistedTags(): string[] {
+    return getBlacklistedTagsByKey('waifuim');
+  }
+
+  /**
    * Fetch random images from waifu.im API
+   * Automatically excludes blacklisted tags
    */
   async fetchImages(options: WaifuFetchOptions = {}): Promise<SourceImage[]> {
     const params = new URLSearchParams();
@@ -65,9 +74,16 @@ export class WaifuClient implements WaifuSource {
       });
     }
 
-    // Add excluded tags
-    if (options.excludedTags && options.excludedTags.length > 0) {
-      options.excludedTags.forEach(tag => {
+    // Add excluded tags (user-provided + blacklisted)
+    const blacklistedTags = this.getBlacklistedTags();
+    const excludedTags = [...(options.excludedTags || [])];
+    for (const tag of blacklistedTags) {
+      if (!excludedTags.includes(tag)) {
+        excludedTags.push(tag);
+      }
+    }
+    if (excludedTags.length > 0) {
+      excludedTags.forEach(tag => {
         params.append('ExcludedTags', tag);
       });
     }
@@ -89,7 +105,17 @@ export class WaifuClient implements WaifuSource {
 
     try {
       const response = await this.client.get<WaifuApiResponse>(`/images?${params.toString()}`);
-      return response.data.items.map(img => this.normalizeImage(img));
+      const images = response.data.items.map(img => this.normalizeImage(img));
+
+      // Filter out images with blacklisted tags as a safety measure
+      if (blacklistedTags.length > 0) {
+        return images.filter(image => {
+          const tagNames = image.tags?.map(tag => tag.name) || [];
+          return !shouldFilterImage(tagNames, blacklistedTags);
+        });
+      }
+
+      return images;
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axiosError.response) {

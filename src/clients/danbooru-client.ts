@@ -12,6 +12,7 @@ import {
   parseTagString,
 } from '../types/danbooru';
 import { SourceImage, WaifuSource } from '../types/source';
+import { getBlacklistedTagsByKey, shouldFilterImage } from '../utils/blacklist';
 
 export interface DanbooruCredentials {
   username: string;
@@ -149,7 +150,15 @@ export class DanbooruClient implements WaifuSource {
   }
 
   /**
+   * Get blacklisted tags for Danbooru
+   */
+  private getBlacklistedTags(): string[] {
+    return getBlacklistedTagsByKey('danbooru');
+  }
+
+  /**
    * Build search tags string from options
+   * Automatically includes blacklisted tags as negated tags (-tag_name)
    */
   private buildTags(options: DanbooruFetchOptions): string {
     const tags: string[] = [];
@@ -166,6 +175,12 @@ export class DanbooruClient implements WaifuSource {
     // Add rating filter if specified (simplified - only single rating supported)
     if (options.rating && !Array.isArray(options.rating)) {
       tags.push(`rating:${options.rating}`);
+    }
+
+    // Add blacklisted tags as negated tags
+    const blacklistedTags = this.getBlacklistedTags();
+    for (const tag of blacklistedTags) {
+      tags.push(`-${tag}`);
     }
 
     return tags.join(' ');
@@ -286,10 +301,22 @@ export class DanbooruClient implements WaifuSource {
 
   /**
    * Fetch multiple images with options
+   * Results are filtered to exclude images with blacklisted tags
    */
   async fetchImages(options: DanbooruFetchOptions = {}): Promise<SourceImage[]> {
     const posts = await this.fetchPosts(options);
-    return posts.map(post => this.normalizeImage(post));
+    const images = posts.map(post => this.normalizeImage(post));
+
+    // Filter out images with blacklisted tags as a safety measure
+    const blacklistedTags = this.getBlacklistedTags();
+    if (blacklistedTags.length > 0) {
+      return images.filter(image => {
+        const tagNames = image.tags?.map(tag => tag.name) || [];
+        return !shouldFilterImage(tagNames, blacklistedTags);
+      });
+    }
+
+    return images;
   }
 }
 

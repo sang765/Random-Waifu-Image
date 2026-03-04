@@ -1,0 +1,14 @@
+{
+  "tag": {
+    "blacklist": {
+      "danbooru": [
+      ],
+      "nekosapi": [
+      ],
+      "picre": [
+      ],
+      "waifuim": [
+      ]
+    }
+  }
+}
