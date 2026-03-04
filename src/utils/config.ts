@@ -330,6 +330,17 @@ export function loadRule34Credentials(): Rule34Credentials | undefined {
   return undefined;
 }
 
+/**
+ * Load Rule 34 AI filter setting from environment variables
+ * Default: true (disable AI-generated images)
+ * @returns boolean - true if AI posts should be disabled
+ */
+export function loadR34DisableAiPost(): boolean {
+  const value = process.env['R34_DISABLE_AI_POST'];
+  if (value === undefined) return true; // Default to true (disable AI)
+  return value.toLowerCase() === 'true' || value === '1';
+}
+
 export function loadConfig(): AppConfig {
   return {
     sfwWebhookUrl: getEnvVar('SFW_WEBHOOK_URL', ''),

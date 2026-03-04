@@ -23,6 +23,7 @@ export class Rule34Client implements WaifuSource {
   private readonly client: AxiosInstance;
   private readonly baseUrl = 'https://api.rule34.xxx';
   private readonly credentials?: Rule34Credentials;
+  private readonly disableAiPosts: boolean;
   readonly name = 'rule34';
 
   /**
@@ -31,7 +32,25 @@ export class Rule34Client implements WaifuSource {
   private lastRequestTime: number = 0;
   private readonly minRequestInterval = 500; // 500ms between requests to be respectful
 
-  constructor(credentials?: Rule34Credentials) {
+  /**
+   * AI-related tags to filter out when disableAiPosts is true
+   */
+  private readonly aiTags = [
+    'ai_generated',
+    'ai-assisted',
+    'ai_assisted',
+    'stable_diffusion',
+    'novelai',
+    'midjourney',
+    'dall-e',
+    'dall_e',
+    'artificial_intelligence',
+    'ai_art',
+  ];
+
+  constructor(credentials?: Rule34Credentials, disableAiPosts: boolean = true) {
+    this.credentials = credentials;
+    this.disableAiPosts = disableAiPosts;
     this.credentials = credentials;
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -130,13 +149,24 @@ export class Rule34Client implements WaifuSource {
       contentHash: post.hash,
       createdAt: post.change ? new Date(post.change * 1000).toISOString() : undefined,
       copyright: copyright.length > 0 ? copyright : undefined,
-      generalTags: allTags.filter(tag => 
-        !tag.startsWith('artist:') && 
-        !tag.startsWith('character:') && 
+      generalTags: allTags.filter(tag =>
+        !tag.startsWith('artist:') &&
+        !tag.startsWith('character:') &&
         !tag.startsWith('copyright:')
       ),
       postUrl,
     };
+  }
+
+  /**
+   * Check if image has AI-related tags
+   */
+  private hasAiTags(image: SourceImage): boolean {
+    if (!image.tags) return false;
+    const tagNames = image.tags.map(tag => tag.name.toLowerCase());
+    return this.aiTags.some(aiTag =>
+      tagNames.some(tagName => tagName.includes(aiTag))
+    );
   }
 
   /**
@@ -274,27 +304,55 @@ export class Rule34Client implements WaifuSource {
     });
 
     if (posts.length === 0) return null;
+
+    // Filter AI-generated images if disabled
+    let images = posts.map(post => this.normalizeImage(post));
+    
+    if (this.disableAiPosts) {
+      const beforeCount = images.length;
+      images = images.filter(img => !this.hasAiTags(img));
+      const filteredCount = beforeCount - images.length;
+      if (filteredCount > 0) {
+        console.log(`[Rule34] Filtered out ${filteredCount} AI-generated image(s)`);
+      }
+    }
+
+    if (images.length === 0) {
+      console.log('[Rule34] All images were AI-generated (filtered out). Retrying...');
+      return null;
+    }
     
     // Pick a random post from the results
-    const randomIndex = Math.floor(Math.random() * posts.length);
-    return this.normalizeImage(posts[randomIndex]);
+    const randomIndex = Math.floor(Math.random() * images.length);
+    return images[randomIndex];
   }
 
   /**
    * Fetch multiple images with options
    * Results are filtered to exclude images with blacklisted tags
+   * Also filters AI-generated images if R34_DISABLE_AI_POST is true
    */
   async fetchImages(options: Rule34FetchOptions = {}): Promise<SourceImage[]> {
     const posts = await this.fetchPosts(options);
-    const images = posts.map(post => this.normalizeImage(post));
+    let images = posts.map(post => this.normalizeImage(post));
 
     // Filter out images with blacklisted tags as a safety measure
     const blacklistedTags = this.getBlacklistedTags();
     if (blacklistedTags.length > 0) {
-      return images.filter(image => {
+      images = images.filter(image => {
         const tagNames = image.tags?.map(tag => tag.name) || [];
         return !shouldFilterImage(tagNames, blacklistedTags);
       });
+    }
+
+    // Filter AI-generated images if disabled
+    if (this.disableAiPosts) {
+      const beforeCount = images.length;
+      images = images.filter(img => !this.hasAiTags(img));
+      const filteredCount = beforeCount - images.length;
+      if (filteredCount > 0) {
+        console.log(`[Rule34] Filtered out ${filteredCount} AI-generated image(s)`);
+      }
     }
 
     return images;
@@ -307,8 +365,8 @@ export class Rule34Client implements WaifuSource {
  */
 let rule34ClientInstance: Rule34Client | null = null;
 
-export function initializeRule34Client(credentials?: Rule34Credentials): Rule34Client {
-  rule34ClientInstance = new Rule34Client(credentials);
+export function initializeRule34Client(credentials?: Rule34Credentials, disableAiPosts?: boolean): Rule34Client {
+  rule34ClientInstance = new Rule34Client(credentials, disableAiPosts);
   return rule34ClientInstance;
 }
 

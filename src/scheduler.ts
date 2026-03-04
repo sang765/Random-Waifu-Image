@@ -6,7 +6,7 @@
  */
 
 import cron from 'node-cron';
-import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials } from './utils/config';
+import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials, loadR34DisableAiPost } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
@@ -26,9 +26,13 @@ if (danbooruCredentials) {
 
 // Initialize Rule 34 client with credentials if available
 const rule34Credentials = loadRule34Credentials();
+const r34DisableAiPost = loadR34DisableAiPost();
 if (rule34Credentials) {
-  initializeRule34Client(rule34Credentials);
+  initializeRule34Client(rule34Credentials, r34DisableAiPost);
   console.log('🔑 Rule 34 credentials loaded');
+  if (r34DisableAiPost) {
+    console.log('🤖 Rule 34 AI filtering enabled (AI-generated images will be skipped)');
+  }
 }
 
 /**
