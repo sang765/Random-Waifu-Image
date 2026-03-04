@@ -12,17 +12,20 @@
  *   npm start -- --source waifu.pics       # Use waifu.pics source
  *   npm start -- --source pic.re           # Use pic.re source
  *   npm start -- --source nekos.best       # Use nekos.best source
+ *   npm start -- --source danbooru         # Use Danbooru source
+ *   npm start -- --source rule34           # Use Rule 34 source
  *   npm start -- --source both             # Randomly select from all sources
  */
 
 import { Command } from 'commander';
-import { config, getRandomTags, loadDanbooruCredentials } from './utils/config';
+import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
 import { picreClient } from './clients/picre-client';
 import { nekosBestClient } from './clients/nekos-best-client';
 import { initializeDanbooruClient, danbooruClient, DanbooruClient } from './clients/danbooru-client';
+import { initializeRule34Client, rule34Client, Rule34Client } from './clients/rule34-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
 import { SourceImage, SourceType, WaifuSource } from './types/source';
 
@@ -31,6 +34,13 @@ const danbooruCredentials = loadDanbooruCredentials();
 if (danbooruCredentials) {
   initializeDanbooruClient(danbooruCredentials);
   console.log('🔑 Danbooru credentials loaded');
+}
+
+// Initialize Rule 34 client with credentials if available
+const rule34Credentials = loadRule34Credentials();
+if (rule34Credentials) {
+  initializeRule34Client(rule34Credentials);
+  console.log('🔑 Rule 34 credentials loaded');
 }
 
 interface CliOptions {
@@ -46,13 +56,13 @@ const program = new Command();
 
 program
   .name('random-waifu-discord')
-  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, pic.re, or nekos.best to Discord')
+  .description('Send random waifu images from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, or rule34 to Discord')
   .version('1.0.0')
   .option('--sfw', 'post SFW image (overrides env config)', false)
   .option('--nsfw', 'post NSFW image (overrides env config)', false)
   .option('-t, --tags <tags>', 'comma-separated tags to filter by', '')
   .option('-r, --random-tags [count]', 'use random tags (default: 1 if no number specified)')
-  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, both, or random', config.imageSource)
+  .option('-s, --source <source>', 'image source: waifu.im, nekosapi, waifu.pics, pic.re, nekos.best, danbooru, rule34, both, or random', config.imageSource)
   .option('--dry-run', 'fetch image but don\'t post to Discord', false)
   .parse();
 
@@ -71,6 +81,10 @@ function getImageSource(): WaifuSource {
     if (danbooruClient) {
       sources.push(danbooruClient);
     }
+    // Add Rule 34 if initialized with credentials
+    if (rule34Client) {
+      sources.push(rule34Client);
+    }
     const randomIndex = Math.floor(Math.random() * sources.length);
     return sources[randomIndex];
   }
@@ -85,6 +99,12 @@ function getImageSource(): WaifuSource {
     }
     return danbooruClient;
   }
+  if (source === 'rule34') {
+    if (!rule34Client) {
+      throw new Error('Rule 34 source selected but no credentials configured. Please set RULE34_USER_ID and RULE34_API_KEY in your .env file.');
+    }
+    return rule34Client;
+  }
   return waifuClient;
 }
 
@@ -96,6 +116,10 @@ function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
   // Add Danbooru to fallback if initialized
   if (danbooruClient) {
     sources.push(danbooruClient);
+  }
+  // Add Rule 34 to fallback if initialized
+  if (rule34Client) {
+    sources.push(rule34Client);
   }
   const filteredSources = sources.filter(s => s.name !== excludeSource.name);
   const randomIndex = Math.floor(Math.random() * filteredSources.length);

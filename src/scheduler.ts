@@ -6,13 +6,14 @@
  */
 
 import cron from 'node-cron';
-import { config, getRandomTags, loadDanbooruCredentials } from './utils/config';
+import { config, getRandomTags, loadDanbooruCredentials, loadRule34Credentials } from './utils/config';
 import { waifuClient } from './clients/waifu-client';
 import { nekosClient } from './clients/nekos-client';
 import { waifuPicsClient } from './clients/waifu-pics-client';
 import { picreClient } from './clients/picre-client';
 import { nekosBestClient } from './clients/nekos-best-client';
 import { initializeDanbooruClient, danbooruClient } from './clients/danbooru-client';
+import { initializeRule34Client, rule34Client } from './clients/rule34-client';
 import { DiscordWebhookClient } from './clients/discord-webhook';
 import { WaifuSource, SourceType, SourceImage } from './types/source';
 
@@ -21,6 +22,13 @@ const danbooruCredentials = loadDanbooruCredentials();
 if (danbooruCredentials) {
   initializeDanbooruClient(danbooruCredentials);
   console.log('🔑 Danbooru credentials loaded');
+}
+
+// Initialize Rule 34 client with credentials if available
+const rule34Credentials = loadRule34Credentials();
+if (rule34Credentials) {
+  initializeRule34Client(rule34Credentials);
+  console.log('🔑 Rule 34 credentials loaded');
 }
 
 /**
@@ -34,6 +42,10 @@ function getImageSource(sourceType: SourceType): WaifuSource {
     // Add Danbooru if initialized with credentials
     if (danbooruClient) {
       sources.push(danbooruClient);
+    }
+    // Add Rule 34 if initialized with credentials
+    if (rule34Client) {
+      sources.push(rule34Client);
     }
     const randomIndex = Math.floor(Math.random() * sources.length);
     return sources[randomIndex];
@@ -49,6 +61,12 @@ function getImageSource(sourceType: SourceType): WaifuSource {
     }
     return danbooruClient;
   }
+  if (sourceType === 'rule34') {
+    if (!rule34Client) {
+      throw new Error('Rule 34 source selected but no credentials configured. Please set RULE34_USER_ID and RULE34_API_KEY in your .env file.');
+    }
+    return rule34Client;
+  }
   return waifuClient;
 }
 
@@ -60,6 +78,10 @@ function getFallbackSource(excludeSource: WaifuSource): WaifuSource {
   // Add Danbooru to fallback if initialized
   if (danbooruClient) {
     sources.push(danbooruClient);
+  }
+  // Add Rule 34 to fallback if initialized
+  if (rule34Client) {
+    sources.push(rule34Client);
   }
   const filteredSources = sources.filter(s => s.name !== excludeSource.name);
   const randomIndex = Math.floor(Math.random() * filteredSources.length);

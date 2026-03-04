@@ -4,6 +4,7 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { SourceImage, ContentRating, hexToDecimal } from '../types/source';
+import { extractDominantColor } from '../utils/color-extractor';
 
 /**
  * Get emoji and color for content rating
@@ -58,9 +59,18 @@ function getSourceEmoji(sourceName: string): string {
       return '🖼️';
     case 'danbooru':
       return '🔴';
+    case 'rule34':
+      return '📋';
     default:
       return '🎴';
   }
+}
+
+/**
+ * Check if source provides dominant color in API response
+ */
+function sourceProvidesDominantColor(sourceName: string): boolean {
+  return ['waifu.im', 'nekosapi'].includes(sourceName);
 }
 
 export interface DiscordEmbed {
@@ -146,11 +156,24 @@ export class DiscordWebhookClient {
       includeStats = true,
     } = options;
 
-    // Determine rating emoji (color always comes from image)
+    // Determine rating emoji
     const ratingInfo = image.rating ? getRatingInfo(image.rating) : { emoji: '⚪', color: 0xffb6c1 };
 
-    // Always use dominant color from image for embed color
-    const embedColor = hexToDecimal(image.dominantColor) || ratingInfo.color;
+    // Determine embed color
+    let embedColor: number;
+    
+    // Check if source provides dominant color in API response
+    if (sourceProvidesDominantColor(sourceName) && image.dominantColor) {
+      // Use the dominant color provided by the API
+      const colorDecimal = hexToDecimal(image.dominantColor);
+      embedColor = colorDecimal !== undefined ? colorDecimal : ratingInfo.color;
+    } else {
+      // For sources that don't provide dominant color, extract it from the image
+      console.log(`[Discord] Extracting dominant color from image for ${sourceName}...`);
+      const extractedColor = await extractDominantColor(image.url);
+      const colorDecimal = extractedColor ? hexToDecimal(extractedColor) : undefined;
+      embedColor = colorDecimal !== undefined ? colorDecimal : ratingInfo.color;
+    }
 
     // Build dynamic title
     const sourceEmoji = getSourceEmoji(sourceName);
@@ -353,6 +376,9 @@ export class DiscordWebhookClient {
     } else if (sourceName === 'danbooru') {
       avatarUrl = 'https://danbooru.donmai.us/packs/static/danbooru-logo-128x128-ea111b6658173e847734.png';
       displayName = 'Danbooru';
+    } else if (sourceName === 'rule34') {
+      avatarUrl = 'https://ssd-cdn.nest.rip/uploads/fb0860f1-6358-4460-866b-e854d08ffda4.jpg';
+      displayName = 'Rule 34';
     } else {
       avatarUrl = 'https://www.waifu.im/favicon.png';
     }

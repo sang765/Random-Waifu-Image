@@ -23,7 +23,8 @@
     "axios": "^1.6.2",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "node-vibrant": "^4.0.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",

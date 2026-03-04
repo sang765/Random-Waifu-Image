@@ -122,7 +122,7 @@ export interface BatchWaifuSource extends WaifuSource {
 /**
  * Supported image source identifiers
  */
-export type SourceType = 'waifu.im' | 'nekosapi' | 'waifu.pics' | 'pic.re' | 'nekos.best' | 'danbooru' | 'both' | 'random';
+export type SourceType = 'waifu.im' | 'nekosapi' | 'waifu.pics' | 'pic.re' | 'nekos.best' | 'danbooru' | 'rule34' | 'both' | 'random';
 
 /**
  * Normalize source type (treats 'random' as 'both')

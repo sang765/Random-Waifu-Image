@@ -42,9 +42,12 @@ jobs:
         env:
           SFW_WEBHOOK_URL: ${{ secrets.SFW_WEBHOOK_URL }}
           NSFW_WEBHOOK_URL: ${{ secrets.NSFW_WEBHOOK_URL }}
-          # If you use Danbooru
+          # Danbooru
           DANBOORU_USERNAME: ${{ secrets.DANBOORU_USERNAME }}
           DANBOORU_API_KEY: ${{ secrets.DANBOORU_API_KEY }}
+          # Rule 34
+          RULE34_USER_ID: ${{ secrets.RULE34_USER_ID }}
+          RULE34_API_KEY: ${{ secrets.RULE34_API_KEY }}
         run: |
             npm start -- --sfw --random-tags --source random
             npm start -- --nsfw --random-tags --source random

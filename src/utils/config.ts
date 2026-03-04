@@ -7,7 +7,9 @@ import * as path from 'path';
 import { SourceType } from '../types/source';
 import { PICRE_TAGS } from '../types/picre';
 import { DANBOORU_SFW_TAGS, DANBOORU_NSFW_TAGS } from '../types/danbooru';
+import { RULE34_SFW_TAGS, RULE34_NSFW_TAGS } from '../types/rule34';
 import { DanbooruCredentials } from '../clients/danbooru-client';
+import { Rule34Credentials } from '../clients/rule34-client';
 
 // Load .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
@@ -243,6 +245,8 @@ export function getTagsForSource(source: SourceType, type: 'sfw' | 'nsfw'): stri
       return type === 'sfw' ? NEKOS_BEST_SFW_TAGS : NEKOS_BEST_NSFW_TAGS;
     case 'danbooru':
       return type === 'sfw' ? DANBOORU_SFW_TAGS : DANBOORU_NSFW_TAGS;
+    case 'rule34':
+      return type === 'sfw' ? RULE34_SFW_TAGS : RULE34_NSFW_TAGS;
     case 'waifu.im':
     case 'both':
     case 'random':
@@ -292,7 +296,7 @@ function getNumberEnvVar(key: string, defaultValue: number): number {
 function getSourceTypeEnvVar(key: string, defaultValue: SourceType): SourceType {
   const value = process.env[key];
   if (!value) return defaultValue;
-  const validSources: SourceType[] = ['waifu.im', 'nekosapi', 'waifu.pics', 'pic.re', 'nekos.best', 'danbooru', 'both', 'random'];
+  const validSources: SourceType[] = ['waifu.im', 'nekosapi', 'waifu.pics', 'pic.re', 'nekos.best', 'danbooru', 'rule34', 'both', 'random'];
   return validSources.includes(value as SourceType) ? (value as SourceType) : defaultValue;
 }
 
@@ -306,6 +310,21 @@ export function loadDanbooruCredentials(): DanbooruCredentials | undefined {
 
   if (username && apiKey) {
     return { username, apiKey };
+  }
+
+  return undefined;
+}
+
+/**
+ * Load Rule 34 API credentials from environment variables
+ * Returns undefined if credentials are not configured
+ */
+export function loadRule34Credentials(): Rule34Credentials | undefined {
+  const userId = process.env['RULE34_USER_ID'];
+  const apiKey = process.env['RULE34_API_KEY'];
+
+  if (userId && apiKey) {
+    return { userId, apiKey };
   }
 
   return undefined;
