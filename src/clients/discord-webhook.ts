@@ -307,10 +307,12 @@ export class DiscordWebhookClient {
       });
     }
 
-    // Add Danbooru post link
+    // Add source post link (for sources that provide post URLs like Danbooru, TBIB, Rule34)
     if (image.postUrl) {
+      const sourceEmoji = getSourceEmoji(sourceName);
+      const displaySourceName = sourceName === 'rule34' ? 'Rule 34' : sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
       embed.fields.push({
-        name: '🔴 Danbooru',
+        name: `${sourceEmoji} ${displaySourceName}`,
         value: `[View Post](${image.postUrl})`,
         inline: true,
       });
