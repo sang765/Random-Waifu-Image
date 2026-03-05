@@ -10,10 +10,14 @@
       "waifuim": [
       ],
       "rule34": [
-        "furry"
+        "furry",
+        "furry_female",
+        "furry_male"
       ],
       "tbib": [
-        "furry"
+        "furry",
+        "furry_female",
+        "furry_male"
       ]
     }
   }
