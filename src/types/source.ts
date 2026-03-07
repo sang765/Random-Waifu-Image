@@ -49,6 +49,8 @@ export interface SourceImage {
   createdAt?: string;
   /** Whether the image is animated/GIF */
   isAnimated?: boolean;
+  /** Whether the content is a video */
+  isVideo?: boolean;
   /** Content hash (MD5 for Pic.re) */
   contentHash?: string;
   /** Anime name (for GIFs from nekos.best) */

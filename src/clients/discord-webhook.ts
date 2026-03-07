@@ -83,6 +83,9 @@ export interface DiscordEmbed {
   image?: {
     url: string;
   };
+  video?: {
+    url: string;
+  };
   footer?: {
     text: string;
     icon_url?: string;
@@ -182,7 +185,9 @@ export class DiscordWebhookClient {
     let title = `${sourceEmoji} ${sourceName}`;
     
     // Add content type indicator
-    if (image.isAnimated) {
+    if (image.isVideo) {
+      title += ' | 🎥 Video';
+    } else if (image.isAnimated) {
       title += ' | 🎬 GIF';
     }
     
@@ -194,11 +199,23 @@ export class DiscordWebhookClient {
     const embed: DiscordEmbed = {
       title,
       color: embedColor,
-      image: {
-        url: image.url,
-      },
       timestamp: image.createdAt || new Date().toISOString(),
     };
+
+    // Add video or image based on content type
+    if (image.isVideo) {
+      embed.video = {
+        url: image.url,
+      };
+      // For videos, also set thumbnail as fallback
+      embed.image = {
+        url: image.url,
+      };
+    } else {
+      embed.image = {
+        url: image.url,
+      };
+    }
 
     // Add description if available
     if (includeDescription && image.description) {
