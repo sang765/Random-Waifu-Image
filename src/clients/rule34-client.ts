@@ -135,6 +135,10 @@ export class Rule34Client implements WaifuSource {
     // Build Rule 34 post URL
     const postUrl = `https://rule34.xxx/index.php?page=post&s=view&id=${post.id}`;
 
+    // Check if the file is a video (mp4 or webm)
+    const isVideo = post.file_url?.toLowerCase().endsWith('.mp4') || 
+                    post.file_url?.toLowerCase().endsWith('.webm');
+
     return {
       id: post.id,
       url: post.file_url,
@@ -155,6 +159,8 @@ export class Rule34Client implements WaifuSource {
         !tag.startsWith('copyright:')
       ),
       postUrl,
+      isVideo,
+      previewUrl: post.sample_url || post.preview_url,
     };
   }
 

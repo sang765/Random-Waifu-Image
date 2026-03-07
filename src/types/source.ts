@@ -51,6 +51,8 @@ export interface SourceImage {
   isAnimated?: boolean;
   /** Whether the content is a video */
   isVideo?: boolean;
+  /** Preview/thumbnail URL for videos */
+  previewUrl?: string;
   /** Content hash (MD5 for Pic.re) */
   contentHash?: string;
   /** Anime name (for GIFs from nekos.best) */

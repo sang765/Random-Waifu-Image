@@ -203,14 +203,15 @@ export class DiscordWebhookClient {
     };
 
     // Add video or image based on content type
+    // Note: Discord embed 'video' field only works for YouTube/Twitch, not for direct video URLs
+    // For direct video URLs, we need to send as message content to show Play button
     if (image.isVideo) {
-      embed.video = {
-        url: image.url,
-      };
-      // For videos, also set thumbnail as fallback
-      embed.image = {
-        url: image.url,
-      };
+      // For videos, use preview/thumbnail if available, otherwise skip image
+      if (image.previewUrl) {
+        embed.image = {
+          url: image.previewUrl,
+        };
+      }
     } else {
       embed.image = {
         url: image.url,
@@ -413,6 +414,11 @@ export class DiscordWebhookClient {
       avatar_url: avatarUrl,
       embeds: [embed],
     };
+
+    // For video posts, add the video URL to message content so Discord shows Play button
+    if (image.isVideo) {
+      payload.content = image.url;
+    }
 
     await this.sendPayload(payload);
   }
