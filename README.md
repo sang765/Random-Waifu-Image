@@ -1,6 +1,6 @@
 # 🌸 Random Waifu Discord
 
-Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best), [danbooru](https://danbooru.donmai.us), [rule34](https://rule34.xxx), [tbib](https://tbib.org)) to Discord channels via webhooks.
+Send random anime images from multiple sources ([waifu.im](https://waifu.im), [nekosapi.com](https://nekosapi.com), [waifu.pics](https://waifu.pics), [pic.re](https://pic.re), [nekos.best](https://nekos.best), [danbooru](https://danbooru.donmai.us), ~~[rule34](https://rule34.xxx), [tbib](https://tbib.org)~~) to Discord channels via webhooks.
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@ Send random anime images from multiple sources ([waifu.im](https://waifu.im), [n
 
 ## ✨ Features
 
-- 🖼️ **8 Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, rule34, and tbib
+- 🖼️ **8 (6) Image Sources** - Fetches from waifu.im, nekosapi.com, waifu.pics, pic.re, nekos.best, danbooru, ~~rule34~~, and ~~tbib~~
 - 🔒 **SFW/NSFW Support** - Separate webhooks for SFW and NSFW content
 - 🏷️ **Tag Filtering** - Filter images by specific tags (varies by source)
 - ⏰ **Scheduling** - Automated posting via cron jobs or GitHub Actions
