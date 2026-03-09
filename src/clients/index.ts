@@ -15,20 +15,6 @@ export {
   danbooruClient,
   type DanbooruCredentials,
 } from './danbooru-client';
-export {
-  Rule34Client,
-  initializeRule34Client,
-  getRule34Client,
-  rule34Client,
-  type Rule34Credentials,
-} from './rule34-client';
-export {
-  TBIBClient,
-  initializeTBIBClient,
-  getTBIBClient,
-  tbibClient,
-  type TBIBClientOptions,
-} from './tbib-client';
 
 // Export blacklist utility for external use
 export {
