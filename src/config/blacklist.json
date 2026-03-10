@@ -3,6 +3,8 @@
     "blacklist": {
       "danbooru": [
       ],
+      "yande.re": [
+      ],
       "nekosapi": [
       ],
       "picre": [

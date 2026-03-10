@@ -15,6 +15,13 @@ export {
   danbooruClient,
   type DanbooruCredentials,
 } from './danbooru-client';
+export {
+  YandeClient,
+  initializeYandeClient,
+  getYandeClient,
+  yandeClient,
+  type YandeCredentials,
+} from './yande-client';
 
 // Export blacklist utility for external use
 export {

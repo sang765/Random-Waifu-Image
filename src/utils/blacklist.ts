@@ -31,6 +31,7 @@ const SOURCE_KEY_MAP: Record<SourceType, string | null> = {
   'pic.re': 'picre',
   'nekos.best': null, // nekos.best uses categories, not tags
   'danbooru': 'danbooru',
+  'yande.re': 'yande.re',
   'both': null, // 'both' is a meta-source, handled individually
   'random': null, // 'random' is a meta-source, handled individually
 };
